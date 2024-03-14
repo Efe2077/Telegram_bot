@@ -19,8 +19,8 @@ def add_user(user_name, user_id):
 
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
-    result = cur.execute(f"""SELECT name, id FROM Admins WHERE Id = ? or Name = ?""",
-                         (user_id, user_name)).fetchall()
+    result = cur.execute(f"""SELECT Name FROM Admins WHERE Name = ?""",
+                         (user_name, )).fetchall()
     if result:
         ADMIN = True
     else:
@@ -30,17 +30,20 @@ def add_user(user_name, user_id):
 
 
 def add_admin(admin_name):
+    if not admin_name:
+        return 0
+    elif admin_name[0] == '@':
+        admin_name = admin_name[1:]
+
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
-    cur.execute(f"""INSERT INTO Admins(Name, Id) VALUES('{admin_name}', {1})""").fetchall()
-    con.commit()
-    con.close()
+    result = cur.execute(f"""SELECT Name from Admins WHERE Name = ?""", (admin_name, )).fetchall()
 
-    con = sqlite3.connect('Users.db')
-    cur = con.cursor()
-    result = cur.execute(f"""SELECT name, id FROM Admins WHERE Name = ?""",
-                         (admin_name, )).fetchall()
-    print(result)
+    if result:
+        print('Данный пользователь уже является админом')
+    else:
+        cur.execute(f"""INSERT INTO Admins(Name) VALUES('{admin_name}')""").fetchall()
+
     con.commit()
     con.close()
 

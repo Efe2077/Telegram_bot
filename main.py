@@ -18,14 +18,15 @@ GOODBYES = ['До свидания', 'Всего хорошего',
 
 
 ADMIN_STATUS = None
+new_admin_name = str()
 
 
 @bot.message_handler(commands=['start', 'hello', 'привет'])
 def start(message):
     global ADMIN_STATUS
     bot.send_message(message.chat.id, choice(GREETINGS))
-    NAME = message.from_user.username
-    bot.send_message(message.chat.id, NAME)
+    name = message.from_user.first_name
+    bot.send_message(message.chat.id, name)
 
 
 @bot.message_handler(commands=['bye', 'end', 'пока'])
@@ -41,7 +42,10 @@ def admin(message):
         markup = types.InlineKeyboardMarkup()
         btn1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
         markup.row(btn1)
+        btn2 = types.InlineKeyboardButton('Назад', callback_data='return')
+        markup.row(btn2)
         bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
+
     else:
         bot.send_message(message.chat.id, 'Вы не являетесь админом')
 
@@ -54,15 +58,22 @@ def callback_message(callback):
         file = open('data/telegram_username.jpg', 'rb')
         bot.send_photo(callback.message.chat.id, file)
         bot.register_next_step_handler(callback.message, inp_name)
+
     elif callback.data == 'answer_yes':
-        print('Ok')
+        bot.send_message(callback.message.chat.id, new_admin_name)
+        add_admin(new_admin_name)
     elif callback.data == 'answer_no':
-        print('No')
+        bot.send_message(callback.message.chat.id, 'Напишиет имя еще раз')
+        bot.register_next_step_handler(callback.message, inp_name)
+    elif callback.data == 'return':
+        bot.delete_message(callback.message.chat.id, callback.message.message_id)
 
 
 def inp_name(message):
     if message.text:
-        bot.send_message(message.chat.id, f'Такое имя: {message.text}')
+        global new_admin_name
+        new_admin_name = message.text
+        bot.send_message(message.chat.id, f'Такое имя: {new_admin_name}')
 
         markup = types.InlineKeyboardMarkup()
         btn1 = types.InlineKeyboardButton('Да', callback_data='answer_yes')
