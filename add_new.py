@@ -51,6 +51,7 @@ def add_admin(your_name, admin_name):
         cur.execute(f"""INSERT INTO Admins(Name, Added_admin) VALUES('{admin_name}', 'Not')""").fetchall()
         cur.execute(f"""UPDATE Admins SET Added_admin = '{answer}'
                         WHERE Name = '{your_name}'""").fetchall()
+        print('Админ добавлен')
 
     con.commit()
     con.close()
@@ -91,8 +92,10 @@ def delete_your_admins(your_name, name):
 
     cur.execute(f"""UPDATE Admins SET Added_admin = '{upd_list}' WHERE Name = '{your_name}'""")
 
+    print('Админ удален')
+
     con.commit()
     con.close()
 
 
-add_admin('Koku', 'Bratik')
+# add_admin('EfeFe4', 'Me')
