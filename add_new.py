@@ -103,6 +103,3 @@ def delete_your_admins(your_name, name):
     con.close()
 
     return note
-
-
-# add_admin('EfeFe4', 'Me')
