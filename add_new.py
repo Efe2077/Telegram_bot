@@ -85,6 +85,12 @@ def delete_your_admins(your_name, name):
 
     # Удаление админа
 
+    his = ''
+
+    his_admins = cur.execute(f"""SELECT Added_admin from Admins WHERE Name = ?""", (name, )).fetchall()
+    if his_admins[0][0] != 'Not':
+        his = his_admins[0][0]
+
     cur.execute(f"""DELETE FROM Admins WHERE Name = '{name}'""")
 
     # Удаление добавленного админа у тебя в списке
@@ -95,6 +101,9 @@ def delete_your_admins(your_name, name):
     if not upd_list:
         upd_list = 'Not'
 
+    if his:
+        upd_list += ' ' + his
+
     cur.execute(f"""UPDATE Admins SET Added_admin = '{upd_list}' WHERE Name = '{your_name}'""")
 
     note = 'Админ удален'
@@ -103,6 +112,3 @@ def delete_your_admins(your_name, name):
     con.close()
 
     return note
-
-
-# add_admin('EfeFe4', 'Me')
