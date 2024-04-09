@@ -69,11 +69,12 @@ def callback_message(callback):
         del_admin(callback.message)
     elif callback.data == 'answer_yes':
         if command == 'add_admin':
-            bot.send_message(callback.message.chat.id, new_admin_name)
-            add_admin(USER_NAME, new_admin_name)
+            mess = add_admin(USER_NAME, new_admin_name)
+            bot.send_message(callback.message.chat.id, mess)
 
         elif command == 'delete_admin':
-            delete_your_admins(USER_NAME, new_admin_name)
+            mess = delete_your_admins(USER_NAME, new_admin_name)
+            bot.send_message(callback.message.chat.id, mess)
 
     elif callback.data == 'answer_no':
         markup = types.InlineKeyboardMarkup()
