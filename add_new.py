@@ -40,7 +40,8 @@ def add_admin(your_name, admin_name):
     result = cur.execute(f"""SELECT Name from Admins WHERE Name = ?""", (admin_name, )).fetchall()
 
     if result:
-        print('Данный пользователь уже является админом')
+        note = 'Данный пользователь уже является админом'
+        return note
     else:
         result2 = cur.execute(f"""SELECT Added_admin from Admins WHERE Name = ?""", (your_name,)).fetchall()
         yours_admins = result2[0][0]
@@ -51,10 +52,12 @@ def add_admin(your_name, admin_name):
         cur.execute(f"""INSERT INTO Admins(Name, Added_admin) VALUES('{admin_name}', 'Not')""").fetchall()
         cur.execute(f"""UPDATE Admins SET Added_admin = '{answer}'
                         WHERE Name = '{your_name}'""").fetchall()
-        print('Админ добавлен')
+        note = 'Админ добавлен'
 
     con.commit()
     con.close()
+
+    return note
 
 
 def delete_your_admins(your_name, name):
@@ -66,17 +69,19 @@ def delete_your_admins(your_name, name):
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
 
+    note = ''
+
     result = cur.execute(f"""SELECT Added_admin from Admins WHERE Name = ?""", (your_name, )).fetchall()
 
     if result[0][0] is not None:
         list_of_yours = [i[0] for i in result][0].split()
     else:
-        print('У вас нет добавленных админов')
-        return
+        note = 'У вас нет добавленных админов'
+        return note
 
     if not (name in list_of_yours):
-        print('Вы не можете удалить данного админа, потому что вы его не добавляли')
-        return 0
+        note = 'Вы не можете удалить данного админа, потому что вы его не добавляли'
+        return note
 
     # Удаление админа
 
@@ -92,10 +97,12 @@ def delete_your_admins(your_name, name):
 
     cur.execute(f"""UPDATE Admins SET Added_admin = '{upd_list}' WHERE Name = '{your_name}'""")
 
-    print('Админ удален')
+    note = 'Админ удален'
 
     con.commit()
     con.close()
+
+    return note
 
 
 # add_admin('EfeFe4', 'Me')
