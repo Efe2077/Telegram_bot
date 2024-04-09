@@ -4,7 +4,7 @@ from random import choice
 from add_new import add_user, add_admin, delete_your_admins
 
 
-bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
+bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
 
 
 GREETINGS = ['Привет', 'Приветствую вас',
@@ -23,7 +23,7 @@ new_admin_name = str()
 USER_NAME = None
 
 
-@bot.message_handler(commands=['start', 'hello', 'привет'])
+@bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
 def start(message):
     global ADMIN_STATUS, USER_NAME
     bot.send_message(message.chat.id, choice(GREETINGS))
@@ -120,7 +120,7 @@ def func(message):
 
 
 def inp_name(message):
-    if message.text and message.text != 'return':
+    if message.text:
         global new_admin_name, command
         new_admin_name = message.text
         bot.send_message(message.chat.id, f'Такое имя: {new_admin_name}?')
