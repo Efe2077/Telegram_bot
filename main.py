@@ -1,4 +1,5 @@
 import telebot
+import json
 from telebot import types
 from random import choice
 from add_new import add_user, add_admin, delete_your_admins
@@ -67,32 +68,42 @@ def callback_message(callback):
         bot.register_next_step_handler(callback.message, inp_name)
     elif callback.data == 'delete_admin':
         del_admin(callback.message)
-    elif callback.data == 'answer_yes':
+
+
+@bot.message_handler(content_types=['text'])
+def func(message):
+    global command
+    if message.text == "✅ Да":
         if command == 'add_admin':
             mess = add_admin(USER_NAME, new_admin_name)
-            bot.send_message(callback.message.chat.id, mess)
+            bot.send_message(message.chat.id, mess)
 
         elif command == 'delete_admin':
             mess = delete_your_admins(USER_NAME, new_admin_name)
-            bot.send_message(callback.message.chat.id, mess)
+            bot.send_message(message.chat.id, mess)
+    elif message.text == "❌ Нет":
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        btn1 = types.KeyboardButton('Написать имя еще раз')
+        btn2 = types.KeyboardButton('Назад')
+        markup.add(btn1, btn2)
+        bot.send_message(message.chat.id, 'Выберете:', reply_markup=markup)
+    elif message.text == 'Написать имя еще раз':
+        bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
-    elif callback.data == 'answer_no':
-        markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton('Написать имя еще раз', callback_data='add_new_admin')
-        markup.row(btn1)
-        btn2 = types.InlineKeyboardButton('Назад', callback_data='return')
-        markup.row(btn2)
-        bot.send_message(callback.message.chat.id, 'Выберете:', reply_markup=markup)
+        file = open('data/telegram_username.jpg', 'rb')
+        bot.send_photo(message.chat.id, file)
+        command = 'add_admin'
+        bot.register_next_step_handler(message, inp_name)
 
-    elif callback.data == 'return':
-        callback.data = None
-
-        bot.delete_message(callback.message.chat.id, callback.message.message_id - 5)
-        bot.delete_message(callback.message.chat.id, callback.message.message_id - 4)
-        bot.delete_message(callback.message.chat.id, callback.message.message_id - 3)
-        bot.delete_message(callback.message.chat.id, callback.message.message_id - 2)
-        bot.delete_message(callback.message.chat.id, callback.message.message_id - 1)
-        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+    elif message.text == 'Назад':
+        bot.delete_message(message.chat.id, message.message_id - 7)
+        bot.delete_message(message.chat.id, message.message_id - 6)
+        bot.delete_message(message.chat.id, message.message_id - 5)
+        bot.delete_message(message.chat.id, message.message_id - 4)
+        bot.delete_message(message.chat.id, message.message_id - 3)
+        bot.delete_message(message.chat.id, message.message_id - 2)
+        bot.delete_message(message.chat.id, message.message_id - 1)
+        bot.delete_message(message.chat.id, message.message_id)
 
 
 def inp_name(message):
@@ -101,11 +112,10 @@ def inp_name(message):
         new_admin_name = message.text
         bot.send_message(message.chat.id, f'Такое имя: {new_admin_name}?')
 
-        markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton('Да', callback_data='answer_yes')
-        markup.row(btn1)
-        btn2 = types.InlineKeyboardButton('Нет', callback_data='answer_no')
-        markup.row(btn2)
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        btn1 = types.KeyboardButton('✅ Да')
+        btn2 = types.KeyboardButton('❌ Нет')
+        markup.add(btn1, btn2)
         bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
 
 
@@ -115,11 +125,6 @@ def del_admin(message):
     bot.send_message(message.chat.id, 'Внимание! Вы можете удалить только тех админов, которых вы добавляли')
     bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа")
     bot.register_next_step_handler(message, inp_name)
-
-
-@bot.message_handler()
-def mees(message):
-    bot.send_message(message.chat.id, message.json['text'])
 
 
 if __name__ == '__main__':
