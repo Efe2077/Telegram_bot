@@ -37,7 +37,8 @@ def add_admin(your_name, admin_name):
 
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
-    result = cur.execute(f"""SELECT Name from Admins WHERE Name = ?""", (admin_name, )).fetchall()
+
+   result = cur.execute(f"""SELECT Name from Admins WHERE Name = ?""", (admin_name, )).fetchall()
 
     if result:
         print('Данный пользователь уже является админом')
