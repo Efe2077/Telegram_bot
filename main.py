@@ -138,7 +138,7 @@ def inp_name(message):
 def del_admin(message):
     global command
     command = 'delete_admin'
-    bot.send_message(message.chat.id, 'Вниманиее! Вы можете удалить только тех админов, которых вы добавляли')
+    bot.send_message(message.chat.id, 'Внимание_ееее! Вы можете удалить только тех админов, которых вы добавляли')
     bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа")
     bot.register_next_step_handler(message, inp_name)
 
