@@ -40,8 +40,11 @@ def bye(message):
 
 @bot.message_handler(commands=['command'])
 def admin(message):
-    NAME, ID = message.from_user.username, message.chat.id
-    ADMIN_STATUS = add_user(NAME, ID)
+    global ADMIN_STATUS
+    name, id = message.from_user.username, message.chat.id
+    if name == 'Uniade_bot':
+        name = message.chat.username
+    ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton('Заказать напиток', callback_data='buy_drink')
     btn2 = types.InlineKeyboardButton('Расписание', callback_data='schedule')
@@ -70,6 +73,8 @@ def admin(message):
 def callback_message(callback):
     global command, USER_NAME
     USER_NAME = callback.message.chat.username
+    markup3 = types.InlineKeyboardMarkup()
+    markup3.add(types.InlineKeyboardButton('назад', callback_data='F_A_Q'))
     if callback.data == 'add_new_admin':
         bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
@@ -84,6 +89,41 @@ def callback_message(callback):
         bot.send_message(callback.message.chat.id, text)
     elif callback.data == 'music':
         bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
+
+    elif callback.data == 'F_A_Q':
+        questions(callback.message)
+    elif callback.data == 'qw_1':
+        bot.send_message(callback.message.chat.id, 'ответ 1')
+        ret(callback)
+    elif callback.data == 'qw_2':
+        bot.send_message(callback.message.chat.id, 'ответ 2')
+        ret(callback)
+    elif callback.data == 'qw_3':
+        bot.send_message(callback.message.chat.id, 'ответ 3')
+        ret(callback)
+    elif callback.data == 'qw_4':
+        bot.send_message(callback.message.chat.id, 'ответ 4')
+        ret(callback)
+    elif callback.data == 'qw_5':
+        bot.send_message(callback.message.chat.id, 'ответ 5')
+        ret(callback)
+    elif callback.data == 'qw_6':
+        bot.send_message(callback.message.chat.id, 'ответ 6')
+        ret(callback)
+    elif callback.data == 'qw_7':
+        bot.send_message(callback.message.chat.id, 'ответ 7')
+        ret(callback)
+    elif callback.data == 'qw_8':
+        bot.send_message(callback.message.chat.id, 'ответ 8')
+        ret(callback)
+    elif callback.data == 'qw_9':
+        bot.send_message(callback.message.chat.id, 'ответ 9')
+        ret(callback)
+    elif callback.data == 'qw_10':
+        bot.send_message(callback.message.chat.id, 'ответ 10')
+        ret(callback)
+    elif callback.data == 'qw_quit':
+        admin(callback.message)
 
 
 @bot.message_handler(content_types=['text'])
@@ -112,14 +152,11 @@ def func(message):
         bot.register_next_step_handler(message, inp_name)
 
     elif message.text == 'Назад':
-        bot.delete_message(message.chat.id, message.message_id - 7)
-        bot.delete_message(message.chat.id, message.message_id - 6)
-        bot.delete_message(message.chat.id, message.message_id - 5)
-        bot.delete_message(message.chat.id, message.message_id - 4)
-        bot.delete_message(message.chat.id, message.message_id - 3)
-        bot.delete_message(message.chat.id, message.message_id - 2)
-        bot.delete_message(message.chat.id, message.message_id - 1)
-        bot.delete_message(message.chat.id, message.message_id)
+        for number in range(-7, +1, +1):
+            bot.delete_message(message.chat.id, message.message_id + number)
+
+    elif message.text == 'К вопросам':
+        questions(message)
 
 
 def inp_name(message):
@@ -135,10 +172,31 @@ def inp_name(message):
         bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
 
 
+def ret(callback):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup.add(types.InlineKeyboardButton('К вопросам'))
+    bot.send_message(callback.message.chat.id, '.', reply_markup=markup)
+
+
+def questions(message):
+    markup2 = types.InlineKeyboardMarkup()
+    markup2.add(types.InlineKeyboardButton('вопрос 1', callback_data='qw_1'))
+    markup2.add(types.InlineKeyboardButton('вопрос 2', callback_data='qw_2'))
+    markup2.add(types.InlineKeyboardButton('вопрос 3', callback_data='qw_3'))
+    markup2.add(types.InlineKeyboardButton('вопрос 4', callback_data='qw_4'))
+    markup2.add(types.InlineKeyboardButton('вопрос 5', callback_data='qw_5'))
+    markup2.add(types.InlineKeyboardButton('вопрос 6', callback_data='qw_6'))
+    markup2.add(types.InlineKeyboardButton('вопрос 7', callback_data='qw_7'))
+    markup2.add(types.InlineKeyboardButton('вопрос 8', callback_data='qw_8'))
+    markup2.add(types.InlineKeyboardButton('вопрос 9', callback_data='qw_9'))
+    markup2.add(types.InlineKeyboardButton('вопрос 10', callback_data='qw_10'))
+    markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
+    bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup2)
+
 def del_admin(message):
     global command
     command = 'delete_admin'
-    bot.send_message(message.chat.id, 'Вниманиее! Вы можете удалить только тех админов, которых вы добавляли')
+    bot.send_message(message.chat.id, 'Внимание_ееее! Вы можете удалить только тех админов, которых вы добавляли')
     bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа")
     bot.register_next_step_handler(message, inp_name)
 
