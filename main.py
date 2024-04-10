@@ -84,6 +84,10 @@ def callback_message(callback):
         bot.send_message(callback.message.chat.id, text)
     elif callback.data == 'music':
         bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
+    elif callback.data == 'buy_drink':
+        bot.send_message(callback.message.chat.id, "Сделайте заказ")
+        command = 'add_admin'
+        bot.register_next_step_handler(callback.message, buy_drink)
 
 
 @bot.message_handler(content_types=['text'])
@@ -122,6 +126,13 @@ def func(message):
         bot.delete_message(message.chat.id, message.message_id)
 
 
+@bot.message_handler(content_types=['photo'])
+def get_photo(message):
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton('Перейти в вк', url='https://vk.com/rg_child_league'))
+    bot.reply_to(message, 'Здорово! Не хотите ли Вы предложить это фото для поста в канале?', reply_markup=markup)
+
+
 def inp_name(message):
     if message.text:
         global new_admin_name, command
@@ -133,6 +144,10 @@ def inp_name(message):
         btn2 = types.KeyboardButton('❌ Нет')
         markup.add(btn1, btn2)
         bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
+
+
+def buy_drink(message):
+    print(command)
 
 
 def del_admin(message):
