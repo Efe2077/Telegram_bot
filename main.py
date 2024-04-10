@@ -4,7 +4,7 @@ from random import choice
 from add_new import add_user, add_admin, delete_your_admins
 
 
-bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
+bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
 
 
 GREETINGS = ['Привет', 'Приветствую вас',
@@ -81,6 +81,8 @@ def callback_message(callback):
     elif callback.data == 'our_social_networks':
         text = open('data/social_networks.txt', 'r', encoding='utf-8').read()
         bot.send_message(callback.message.chat.id, text)
+    elif callback.data == 'music':
+        bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
 
 
 @bot.message_handler(content_types=['text'])
