@@ -1,5 +1,4 @@
 import telebot
-import json
 from telebot import types
 from random import choice
 from add_new import add_user, add_admin, delete_your_admins
@@ -39,20 +38,31 @@ def bye(message):
     bot.send_message(message.chat.id, choice(GOODBYES))
 
 
-@bot.message_handler(commands=['admin'])
+@bot.message_handler(commands=['command'])
 def admin(message):
     NAME, ID = message.from_user.username, message.chat.id
     ADMIN_STATUS = add_user(NAME, ID)
-    if ADMIN_STATUS:
-        markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
-        markup.row(btn1)
-        btn2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
-        markup.row(btn2)
-        bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
+    markup = types.InlineKeyboardMarkup()
+    btn1 = types.InlineKeyboardButton('Заказать напиток', callback_data='buy_drink')
+    btn2 = types.InlineKeyboardButton('Расписание', callback_data='schedule')
+    markup.row(btn1, btn2)
+    btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
+    btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
+    markup.row(btn3, btn4)
+    btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
+    btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='contact_the_organizers')
+    markup.row(btn5, btn6)
+    btn7 = types.InlineKeyboardButton('FAQ ⁉️', callback_data='F_A_Q')
+    btn8 = types.InlineKeyboardButton('Наши соцсети', callback_data='our_social_networks')
+    markup.row(btn7, btn8)
 
-    else:
-        bot.send_message(message.chat.id, 'Вы не являетесь админом')
+    if ADMIN_STATUS:
+        btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
+        markup.row(btn_for_admin1)
+        btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
+        markup.row(btn_for_admin2)
+
+    bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda callback: True)
@@ -68,6 +78,9 @@ def callback_message(callback):
         bot.register_next_step_handler(callback.message, inp_name)
     elif callback.data == 'delete_admin':
         del_admin(callback.message)
+    elif callback.data == 'our_social_networks':
+        text = open('data/social_networks.txt', 'r', encoding='utf-8').read()
+        bot.send_message(callback.message.chat.id, text)
 
 
 @bot.message_handler(content_types=['text'])
