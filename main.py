@@ -41,8 +41,10 @@ def bye(message):
 @bot.message_handler(commands=['command'])
 def admin(message):
     global ADMIN_STATUS
-    NAME, ID = message.from_user.username, message.chat.id
-    ADMIN_STATUS = add_user(NAME, ID)
+    name, id = message.from_user.username, message.chat.id
+    if name == 'Uniade_bot':
+        name = message.chat.username
+    ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton('Заказать напиток', callback_data='buy_drink')
     btn2 = types.InlineKeyboardButton('Расписание', callback_data='schedule')
@@ -57,7 +59,6 @@ def admin(message):
     btn8 = types.InlineKeyboardButton('Наши соцсети', callback_data='our_social_networks')
     btn9 = types.InlineKeyboardButton('Типа кнопка', callback_data='our_social_networks')
     markup.row(btn7, btn8, btn9)
-    print(ADMIN_STATUS)
 
     if ADMIN_STATUS:
         btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
@@ -88,40 +89,39 @@ def callback_message(callback):
         bot.send_message(callback.message.chat.id, text)
     elif callback.data == 'music':
         bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
+
     elif callback.data == 'F_A_Q':
-        markup2 = types.InlineKeyboardMarkup()
-        markup2.add(types.InlineKeyboardButton('вопрос 1', callback_data='qw_1'))
-        markup2.add(types.InlineKeyboardButton('вопрос 2', callback_data='qw_2'))
-        markup2.add(types.InlineKeyboardButton('вопрос 3', callback_data='qw_3'))
-        markup2.add(types.InlineKeyboardButton('вопрос 4', callback_data='qw_4'))
-        markup2.add(types.InlineKeyboardButton('вопрос 5', callback_data='qw_5'))
-        markup2.add(types.InlineKeyboardButton('вопрос 6', callback_data='qw_6'))
-        markup2.add(types.InlineKeyboardButton('вопрос 7', callback_data='qw_7'))
-        markup2.add(types.InlineKeyboardButton('вопрос 8', callback_data='qw_8'))
-        markup2.add(types.InlineKeyboardButton('вопрос 9', callback_data='qw_9'))
-        markup2.add(types.InlineKeyboardButton('вопрос 10', callback_data='qw_10'))
-        markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
-        bot.send_message(callback.message.chat.id, 'qwerty', reply_markup=markup2)
+        questions(callback.message)
     elif callback.data == 'qw_1':
-        bot.send_message(callback.message.chat.id, 'ответ 1', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 1')
+        ret(callback)
     elif callback.data == 'qw_2':
-        bot.send_message(callback.message.chat.id, 'ответ 2', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 2')
+        ret(callback)
     elif callback.data == 'qw_3':
-        bot.send_message(callback.message.chat.id, 'ответ 3', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 3')
+        ret(callback)
     elif callback.data == 'qw_4':
-        bot.send_message(callback.message.chat.id, 'ответ 4', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 4')
+        ret(callback)
     elif callback.data == 'qw_5':
-        bot.send_message(callback.message.chat.id, 'ответ 5', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 5')
+        ret(callback)
     elif callback.data == 'qw_6':
-        bot.send_message(callback.message.chat.id, 'ответ 6', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 6')
+        ret(callback)
     elif callback.data == 'qw_7':
-        bot.send_message(callback.message.chat.id, 'ответ 7', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 7')
+        ret(callback)
     elif callback.data == 'qw_8':
-        bot.send_message(callback.message.chat.id, 'ответ 8', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 8')
+        ret(callback)
     elif callback.data == 'qw_9':
-        bot.send_message(callback.message.chat.id, 'ответ 9', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 9')
+        ret(callback)
     elif callback.data == 'qw_10':
-        bot.send_message(callback.message.chat.id, 'ответ 10', reply_markup=markup3)
+        bot.send_message(callback.message.chat.id, 'ответ 10')
+        ret(callback)
     elif callback.data == 'qw_quit':
         admin(callback.message)
 
@@ -152,14 +152,11 @@ def func(message):
         bot.register_next_step_handler(message, inp_name)
 
     elif message.text == 'Назад':
-        bot.delete_message(message.chat.id, message.message_id - 7)
-        bot.delete_message(message.chat.id, message.message_id - 6)
-        bot.delete_message(message.chat.id, message.message_id - 5)
-        bot.delete_message(message.chat.id, message.message_id - 4)
-        bot.delete_message(message.chat.id, message.message_id - 3)
-        bot.delete_message(message.chat.id, message.message_id - 2)
-        bot.delete_message(message.chat.id, message.message_id - 1)
-        bot.delete_message(message.chat.id, message.message_id)
+        for number in range(-7, +1, +1):
+            bot.delete_message(message.chat.id, message.message_id + number)
+
+    elif message.text == 'К вопросам':
+        questions(message)
 
 
 def inp_name(message):
@@ -174,6 +171,27 @@ def inp_name(message):
         markup.add(btn1, btn2)
         bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
 
+
+def ret(callback):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup.add(types.InlineKeyboardButton('К вопросам'))
+    bot.send_message(callback.message.chat.id, '.', reply_markup=markup)
+
+
+def questions(message):
+    markup2 = types.InlineKeyboardMarkup()
+    markup2.add(types.InlineKeyboardButton('вопрос 1', callback_data='qw_1'))
+    markup2.add(types.InlineKeyboardButton('вопрос 2', callback_data='qw_2'))
+    markup2.add(types.InlineKeyboardButton('вопрос 3', callback_data='qw_3'))
+    markup2.add(types.InlineKeyboardButton('вопрос 4', callback_data='qw_4'))
+    markup2.add(types.InlineKeyboardButton('вопрос 5', callback_data='qw_5'))
+    markup2.add(types.InlineKeyboardButton('вопрос 6', callback_data='qw_6'))
+    markup2.add(types.InlineKeyboardButton('вопрос 7', callback_data='qw_7'))
+    markup2.add(types.InlineKeyboardButton('вопрос 8', callback_data='qw_8'))
+    markup2.add(types.InlineKeyboardButton('вопрос 9', callback_data='qw_9'))
+    markup2.add(types.InlineKeyboardButton('вопрос 10', callback_data='qw_10'))
+    markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
+    bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup2)
 
 def del_admin(message):
     global command
