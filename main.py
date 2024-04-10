@@ -40,6 +40,7 @@ def bye(message):
 
 @bot.message_handler(commands=['command'])
 def admin(message):
+    global ADMIN_STATUS
     NAME, ID = message.from_user.username, message.chat.id
     ADMIN_STATUS = add_user(NAME, ID)
     markup = types.InlineKeyboardMarkup()
@@ -56,6 +57,7 @@ def admin(message):
     btn8 = types.InlineKeyboardButton('Наши соцсети', callback_data='our_social_networks')
     btn9 = types.InlineKeyboardButton('Типа кнопка', callback_data='our_social_networks')
     markup.row(btn7, btn8, btn9)
+    print(ADMIN_STATUS)
 
     if ADMIN_STATUS:
         btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
@@ -121,30 +123,7 @@ def callback_message(callback):
     elif callback.data == 'qw_10':
         bot.send_message(callback.message.chat.id, 'ответ 10', reply_markup=markup3)
     elif callback.data == 'qw_quit':
-        NAME, ID = callback.from_user.username, callback.chat.id
-        ADMIN_STATUS = add_user(NAME, ID)
-        markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton('Заказать напиток', callback_data='buy_drink')
-        btn2 = types.InlineKeyboardButton('Расписание', callback_data='schedule')
-        markup.row(btn1, btn2)
-        btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
-        btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
-        markup.row(btn3, btn4)
-        btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
-        btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='contact_the_organizers')
-        markup.row(btn5, btn6)
-        btn7 = types.InlineKeyboardButton('FAQ ⁉️', callback_data='F_A_Q')
-        btn8 = types.InlineKeyboardButton('Наши соцсети', callback_data='our_social_networks')
-        btn9 = types.InlineKeyboardButton('Типа кнопка', callback_data='our_social_networks')
-        markup.row(btn7, btn8, btn9)
-
-        if ADMIN_STATUS:
-            btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
-            markup.row(btn_for_admin1)
-            btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
-            markup.row(btn_for_admin2)
-
-        bot.send_message(callback.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
+        admin(callback.message)
 
 
 @bot.message_handler(content_types=['text'])
