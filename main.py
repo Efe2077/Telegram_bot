@@ -1,4 +1,5 @@
 import telebot
+import requests
 from telebot import types
 from random import choice
 from add_new import add_user, add_admin, delete_your_admins
@@ -89,9 +90,12 @@ def callback_message(callback):
         bot.send_message(callback.message.chat.id, text)
     elif callback.data == 'music':
         bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
-
     elif callback.data == 'F_A_Q':
         questions(callback.message)
+    elif callback.data == 'grade':
+        bot.send_message(callback.message.chat.id, "Напишите место")
+        bot.register_next_step_handler(callback.message, map)
+
     elif callback.data == 'qw_1':
         bot.send_message(callback.message.chat.id, 'ответ 1')
         ret(callback)
@@ -178,6 +182,28 @@ def ret(callback):
     bot.send_message(callback.message.chat.id, '.', reply_markup=markup)
 
 
+def map(message):
+    text = message.text
+    if text:
+        bot.send_message(message.chat.id, f'Такое место: {text}?')
+        API_KEY = '40d1649f-0493-4b70-98ba-98533de7710b'
+        site = f"http://geocode-maps.yandex.ru/1.x/?apikey={API_KEY}&geocode={text}&format=json"
+
+        response = requests.get(site)
+
+        position = response.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['Point']['pos']
+
+        answer = f'll={",".join(position.split())}'
+
+        resp = requests.get(f"http://static-maps.yandex.ru/1.x/?{answer}&z=16&l=map")
+        map_file = "data/map.jpg"
+        with open(map_file, "wb") as file:
+            file.write(resp.content)
+
+        file = open('data/map.jpg', 'rb')
+        bot.send_photo(message.chat.id, file)
+
+
 def questions(message):
     markup2 = types.InlineKeyboardMarkup()
     markup2.add(types.InlineKeyboardButton('вопрос 1', callback_data='qw_1'))
@@ -192,6 +218,7 @@ def questions(message):
     markup2.add(types.InlineKeyboardButton('вопрос 10', callback_data='qw_10'))
     markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
     bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup2)
+
 
 def del_admin(message):
     global command
