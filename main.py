@@ -54,7 +54,8 @@ def admin(message):
     markup.row(btn5, btn6)
     btn7 = types.InlineKeyboardButton('FAQ ⁉️', callback_data='F_A_Q')
     btn8 = types.InlineKeyboardButton('Наши соцсети', callback_data='our_social_networks')
-    markup.row(btn7, btn8)
+    btn9 = types.InlineKeyboardButton('Типа кнопка', callback_data='our_social_networks')
+    markup.row(btn7, btn8, btn9)
 
     if ADMIN_STATUS:
         btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
