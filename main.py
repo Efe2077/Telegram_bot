@@ -1,5 +1,6 @@
 import telebot
 from telebot import types
+import sqlite3
 from random import choice
 from add_new import add_user, add_admin, delete_your_admins
 
@@ -29,6 +30,13 @@ def start(message):
     bot.send_message(message.chat.id, choice(GREETINGS))
     name = message.from_user.first_name
     bot.send_message(message.chat.id, name)
+    conn = sqlite3.connect('pls.db')
+    cur = conn.cursor()
+
+    cur.execute('CREATE TABLE IF NOT EXISTS pls (id int auto_increment primary key, name str, please str)')
+    conn.commit()
+    cur.close()
+    conn.close()
 
     USER_NAME = message.chat.username
 
@@ -124,8 +132,20 @@ def callback_message(callback):
         ret(callback)
     elif callback.data == 'qw_quit':
         admin(callback.message)
+    elif callback.data == 'contact_the_organizers':
+        markup2 = types.InlineKeyboardMarkup()
+        markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
+        bot.send_message(callback.message.chat.id, "напишите свой вопрос или просьбу", reply_markup=markup2)
+        bot.register_next_step_handler(callback.message, plees)
 
 
+        conn = sqlite3.connect('pls.db')
+        cur = conn.cursor()
+
+        cur.execute(f'INSERT INTO pls (name, please) VALUES ({USER_NAME}, {ples})')
+        conn.commit()
+        cur.close()
+        conn.close()
 @bot.message_handler(content_types=['text'])
 def func(message):
     global command
@@ -170,6 +190,10 @@ def inp_name(message):
         btn2 = types.KeyboardButton('❌ Нет')
         markup.add(btn1, btn2)
         bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
+
+
+def plees(message):
+    ples = message.text
 
 
 def ret(callback):
