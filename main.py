@@ -70,6 +70,8 @@ def admin(message):
 def callback_message(callback):
     global command, USER_NAME
     USER_NAME = callback.message.chat.username
+    markup3 = types.InlineKeyboardMarkup()
+    markup3.add(types.InlineKeyboardButton('назад', callback_data='F_A_Q'))
     if callback.data == 'add_new_admin':
         bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
@@ -84,6 +86,65 @@ def callback_message(callback):
         bot.send_message(callback.message.chat.id, text)
     elif callback.data == 'music':
         bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
+    elif callback.data == 'F_A_Q':
+        markup2 = types.InlineKeyboardMarkup()
+        markup2.add(types.InlineKeyboardButton('вопрос 1', callback_data='qw_1'))
+        markup2.add(types.InlineKeyboardButton('вопрос 2', callback_data='qw_2'))
+        markup2.add(types.InlineKeyboardButton('вопрос 3', callback_data='qw_3'))
+        markup2.add(types.InlineKeyboardButton('вопрос 4', callback_data='qw_4'))
+        markup2.add(types.InlineKeyboardButton('вопрос 5', callback_data='qw_5'))
+        markup2.add(types.InlineKeyboardButton('вопрос 6', callback_data='qw_6'))
+        markup2.add(types.InlineKeyboardButton('вопрос 7', callback_data='qw_7'))
+        markup2.add(types.InlineKeyboardButton('вопрос 8', callback_data='qw_8'))
+        markup2.add(types.InlineKeyboardButton('вопрос 9', callback_data='qw_9'))
+        markup2.add(types.InlineKeyboardButton('вопрос 10', callback_data='qw_10'))
+        markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
+        bot.send_message(callback.message.chat.id, 'qwerty', reply_markup=markup2)
+    elif callback.data == 'qw_1':
+        bot.send_message(callback.message.chat.id, 'ответ 1', reply_markup=markup3)
+    elif callback.data == 'qw_2':
+        bot.send_message(callback.message.chat.id, 'ответ 2', reply_markup=markup3)
+    elif callback.data == 'qw_3':
+        bot.send_message(callback.message.chat.id, 'ответ 3', reply_markup=markup3)
+    elif callback.data == 'qw_4':
+        bot.send_message(callback.message.chat.id, 'ответ 4', reply_markup=markup3)
+    elif callback.data == 'qw_5':
+        bot.send_message(callback.message.chat.id, 'ответ 5', reply_markup=markup3)
+    elif callback.data == 'qw_6':
+        bot.send_message(callback.message.chat.id, 'ответ 6', reply_markup=markup3)
+    elif callback.data == 'qw_7':
+        bot.send_message(callback.message.chat.id, 'ответ 7', reply_markup=markup3)
+    elif callback.data == 'qw_8':
+        bot.send_message(callback.message.chat.id, 'ответ 8', reply_markup=markup3)
+    elif callback.data == 'qw_9':
+        bot.send_message(callback.message.chat.id, 'ответ 9', reply_markup=markup3)
+    elif callback.data == 'qw_10':
+        bot.send_message(callback.message.chat.id, 'ответ 10', reply_markup=markup3)
+    elif callback.data == 'qw_quit':
+        NAME, ID = callback.from_user.username, callback.chat.id
+        ADMIN_STATUS = add_user(NAME, ID)
+        markup = types.InlineKeyboardMarkup()
+        btn1 = types.InlineKeyboardButton('Заказать напиток', callback_data='buy_drink')
+        btn2 = types.InlineKeyboardButton('Расписание', callback_data='schedule')
+        markup.row(btn1, btn2)
+        btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
+        btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
+        markup.row(btn3, btn4)
+        btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
+        btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='contact_the_organizers')
+        markup.row(btn5, btn6)
+        btn7 = types.InlineKeyboardButton('FAQ ⁉️', callback_data='F_A_Q')
+        btn8 = types.InlineKeyboardButton('Наши соцсети', callback_data='our_social_networks')
+        btn9 = types.InlineKeyboardButton('Типа кнопка', callback_data='our_social_networks')
+        markup.row(btn7, btn8, btn9)
+
+        if ADMIN_STATUS:
+            btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
+            markup.row(btn_for_admin1)
+            btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
+            markup.row(btn_for_admin2)
+
+        bot.send_message(callback.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
 
 
 @bot.message_handler(content_types=['text'])
