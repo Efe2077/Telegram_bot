@@ -32,8 +32,7 @@ def start(message):
     bot.send_message(message.chat.id, name)
     USER_NAME = message.chat.username
 
-    if add_user(USER_NAME, message.chat.id):
-        admin(message)
+    admin(message)
 
 
 @bot.message_handler(commands=['bye', 'end', 'пока'])
@@ -98,7 +97,7 @@ def callback_message(callback):
         bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
     elif callback.data == 'buy_drink':
         bot.send_message(callback.message.chat.id, "Сделайте заказ")
-        command = 'add_admin'
+        command = 'drink'
         bot.register_next_step_handler(callback.message, buy_drink)
     elif callback.data == 'F_A_Q':
         questions(callback.message)
