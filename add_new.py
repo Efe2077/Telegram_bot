@@ -14,6 +14,7 @@ def add_user(user_name, user_id):
             {user_name}
             {user_id}
                """)
+
     con.commit()
     con.close()
 
@@ -21,6 +22,10 @@ def add_user(user_name, user_id):
     cur = con.cursor()
     result = cur.execute(f"""SELECT Name FROM Admins WHERE Name = ?""",
                          (user_name, )).fetchall()
+
+    con.commit()
+    con.close()
+
     if result:
         ADMIN = True
     else:

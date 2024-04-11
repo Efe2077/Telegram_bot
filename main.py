@@ -2,6 +2,7 @@ import telebot
 import requests
 from telebot import types
 from random import choice
+from for_questions import send_questions, show_questions
 from add_new import add_user, add_admin, delete_your_admins
 
 
@@ -22,6 +23,8 @@ command = None
 ADMIN_STATUS = None
 new_admin_name = str()
 USER_NAME = None
+quest = None
+consult = show_questions()
 
 
 @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
@@ -62,14 +65,16 @@ def admin(message):
     btn7 = types.InlineKeyboardButton('FAQ ⁉️', callback_data='F_A_Q')
     btn8 = types.InlineKeyboardButton('Наши соцсети', callback_data='our_social_networks')
     markup.row(btn7, btn8)
-    btn9 = types.InlineKeyboardButton('Типа кнопка', callback_data='our_social_networks')
-    markup.row(btn9)
+    # btn9 = types.InlineKeyboardButton('Типа кнопка', callback_data='our_social_networks')
+    # markup.row(btn9)
 
     if ADMIN_STATUS:
         btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
         markup.row(btn_for_admin1)
         btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
         markup.row(btn_for_admin2)
+        btn_for_admin3 = types.InlineKeyboardButton('Вопросы от пользователей', callback_data='show_questions_from_users')
+        markup.row(btn_for_admin3)
         # Временная кнопка
         btn_for_admin3 = types.InlineKeyboardButton('Количество пользователей', callback_data='show_count_of_users')
         markup.row(btn_for_admin3)
@@ -89,6 +94,7 @@ def callback_message(callback):
         command = 'add_admin'
         bot.register_next_step_handler(callback.message, inp_name)
     elif callback.data == 'delete_admin':
+        command = 'delete_admin'
         del_admin(callback.message)
     elif callback.data == 'our_social_networks':
         text = open('data/social_networks.txt', 'r', encoding='utf-8').read()
@@ -104,6 +110,17 @@ def callback_message(callback):
     elif callback.data == 'grade':
         bot.send_message(callback.message.chat.id, "Напишите место")
         bot.register_next_step_handler(callback.message, map)
+    elif callback.data == 'contact_the_organizers':
+        bot.send_message(callback.message.chat.id, "Напишите вопрос")
+        command = 'send_questions'
+        bot.register_next_step_handler(callback.message, ask)
+    elif callback.data == 'show_questions_from_users':
+        show_questions_from_users(callback.message)
+
+    elif [(i[0], i[1]) for i in consult if int(callback.data) == i[0]]:
+        print([(i[0], i[1]) for i in consult if int(callback.data) == i[0]][0][1])
+
+
     # Временная кнопка
     elif callback.data == 'show_count_of_users':
         coint_of_users(callback.message)
@@ -153,6 +170,9 @@ def func(message):
         elif command == 'delete_admin':
             mess = delete_your_admins(USER_NAME, new_admin_name)
             bot.send_message(message.chat.id, mess)
+
+        elif command == 'send_questions':
+            send_questions(message.chat.id, quest)
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         btn1 = types.KeyboardButton('Написать имя еще раз')
@@ -187,12 +207,15 @@ def inp_name(message):
         global new_admin_name, command
         new_admin_name = message.text
         bot.send_message(message.chat.id, f'Такое имя: {new_admin_name}?')
+        yes_or_no(message)
 
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        btn1 = types.KeyboardButton('✅ Да')
-        btn2 = types.KeyboardButton('❌ Нет')
-        markup.add(btn1, btn2)
-        bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
+
+def yes_or_no(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    btn1 = types.KeyboardButton('✅ Да')
+    btn2 = types.KeyboardButton('❌ Нет')
+    markup.add(btn1, btn2)
+    bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
 
 
 def buy_drink(message):
@@ -253,11 +276,26 @@ def questions(message):
 
 
 def del_admin(message):
-    global command
-    command = 'delete_admin'
-    bot.send_message(message.chat.id, 'Внимание_ееее! Вы можете удалить только тех админов, которых вы добавляли')
+    bot.send_message(message.chat.id, 'Внимание! Вы можете удалить только тех админов, которых вы добавляли')
     bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа")
     bot.register_next_step_handler(message, inp_name)
+
+
+def ask(message):
+    global quest
+    text = message.text
+    bot.send_message(message.chat.id, f"Ваш вопрос:\n{text}")
+    quest = text
+    yes_or_no(message)
+
+
+def show_questions_from_users(message):
+    global consult
+    markup = types.InlineKeyboardMarkup()
+    consult = show_questions()
+    for i in consult:
+        markup.add(types.InlineKeyboardButton(f'{i[0]}. {i[1]}', callback_data=i[0]))
+    bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
 
 
 if __name__ == '__main__':
