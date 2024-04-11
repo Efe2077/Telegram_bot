@@ -30,8 +30,10 @@ def start(message):
     bot.send_message(message.chat.id, choice(GREETINGS))
     name = message.from_user.first_name
     bot.send_message(message.chat.id, name)
-
     USER_NAME = message.chat.username
+
+    if add_user(USER_NAME, message.chat.id):
+        admin(message)
 
 
 @bot.message_handler(commands=['bye', 'end', 'пока'])
