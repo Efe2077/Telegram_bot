@@ -66,6 +66,9 @@ def admin(message):
         markup.row(btn_for_admin1)
         btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
         markup.row(btn_for_admin2)
+        # Временная кнопка
+        btn_for_admin3 = types.InlineKeyboardButton('Количество пользователей', callback_data='show_count_of_users')
+        markup.row(btn_for_admin3)
 
     bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
 
@@ -74,8 +77,6 @@ def admin(message):
 def callback_message(callback):
     global command, USER_NAME
     USER_NAME = callback.message.chat.username
-    markup3 = types.InlineKeyboardMarkup()
-    markup3.add(types.InlineKeyboardButton('назад', callback_data='F_A_Q'))
     if callback.data == 'add_new_admin':
         bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
@@ -99,6 +100,9 @@ def callback_message(callback):
     elif callback.data == 'grade':
         bot.send_message(callback.message.chat.id, "Напишите место")
         bot.register_next_step_handler(callback.message, map)
+    # Временная кнопка
+    elif callback.data == 'show_count_of_users':
+        coint_of_users(callback.message)
 
     elif callback.data == 'qw_1':
         bot.send_message(callback.message.chat.id, 'ответ 1')
@@ -195,6 +199,15 @@ def ret(callback):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.add(types.InlineKeyboardButton('К вопросам'))
     bot.send_message(callback.message.chat.id, '.', reply_markup=markup)
+
+
+# Временная функция
+def coint_of_users(message):
+    site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getUsersCount"
+
+    response = requests.get(site)
+
+    bot.send_message(message.chat.id, response.content.decode())
 
 
 def map(message):
