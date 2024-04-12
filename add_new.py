@@ -8,12 +8,13 @@ def add_user(user_name, user_id):
     if result:
         print(result)
     else:
-        cur.execute(f"""INSERT INTO Users(Name, Id) VALUES('{user_name}', {user_id})""").fetchall()
+        cur.execute(f"""INSERT INTO Users(Name, Id, Questions) VALUES('{user_name}', {user_id}, 'No_questions')""").fetchall()
         print(f"""
         Новый пользователь зарегистрирован:
             {user_name}
             {user_id}
                """)
+
     con.commit()
     con.close()
 
@@ -21,6 +22,10 @@ def add_user(user_name, user_id):
     cur = con.cursor()
     result = cur.execute(f"""SELECT Name FROM Admins WHERE Name = ?""",
                          (user_name, )).fetchall()
+
+    con.commit()
+    con.close()
+
     if result:
         ADMIN = True
     else:
