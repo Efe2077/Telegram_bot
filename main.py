@@ -276,9 +276,13 @@ def table(message):
     for i in range(len(response)):
         p.add(list(response[i].values())[11])
 
-    print(f'Выберите интересующий турнир: {p}')
+    markup = types.InlineKeyboardMarkup()
+    consult = p
+    for i in consult:
+        markup.add(types.InlineKeyboardButton(f'{i}', callback_data=i[0]))
+    bot.send_message(message.chat.id, 'Выберите интересующий турнир:', reply_markup=markup)
 
-    site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title={input()}"
+
 
     response = requests.get(site).json()
 
