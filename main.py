@@ -75,6 +75,7 @@ def admin(message):
         markup.row(btn_for_admin3)
         # Временная кнопка
         btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
+        markup.row(btn_for_admin4)
 
 
     bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
@@ -145,6 +146,8 @@ def callback_message(callback):
         ret(callback)
     elif callback.data == 'qw_quit':
         admin(callback.message)
+    elif callback.data in ['Московская зима 2024', 'Спортивная Весна 2024', 'Зимняя Сказка 2023', 'Маленькая принцесса 2024']:
+        slim_shady(callback.message, callback.data)
 
 
 @bot.message_handler(content_types=['text'])
@@ -267,7 +270,7 @@ def del_admin(message):
 
 def table(message):
 
-    a, c, gen, p = list(), list(), list(), set()
+    gen, p = list(), set()
 
     site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title=%"
 
@@ -279,10 +282,14 @@ def table(message):
     markup = types.InlineKeyboardMarkup()
     consult = p
     for i in consult:
-        markup.add(types.InlineKeyboardButton(f'{i}', callback_data=i[0]))
+        markup.add(types.InlineKeyboardButton(f'{i}', callback_data=i))
     bot.send_message(message.chat.id, 'Выберите интересующий турнир:', reply_markup=markup)
 
 
+def slim_shady(message, tour):
+    a, c, gen = list(), list(), list()
+
+    site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title={tour}"
 
     response = requests.get(site).json()
 
@@ -301,6 +308,9 @@ def table(message):
 
         for row_num, data in enumerate(gen):
             worksheet.write_row(row_num, 0, data)
+
+    with open('test.xlsx', 'rb') as f1:
+        bot.send_document(message.chat.id, f1)
 
 
 if __name__ == '__main__':
