@@ -6,7 +6,7 @@ def send_questions(user_id, question):
     cur = con.cursor()
     result = cur.execute(f"""SELECT Questions FROM Users WHERE Id = ?""", (user_id, )).fetchall()
 
-    if question not in result[0][0].split('#'):
+    if question not in result[0][0].split():
         if result[0][0] == 'No_questions':  # Если это первый вопрос
             cur.execute(f"""UPDATE Users SET Questions = '{question}' WHERE Id = '{user_id}' """)
 
