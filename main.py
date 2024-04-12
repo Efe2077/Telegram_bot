@@ -1,5 +1,6 @@
 import telebot
 from telebot import types
+import sqlite3
 from random import choice
 from add_new import add_user, add_admin, delete_your_admins
 
@@ -23,27 +24,45 @@ new_admin_name = str()
 USER_NAME = None
 
 
+def start_markup():
+    markup = types.InlineKeyboardMarkup(row_width=True)
+    link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
+    link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/rg_child_league")
+    check_keyboard = types.InlineKeyboardButton(text="Проверить", callback_data="check")
+    markup.add(link_keyboard1, link_keyboard2, check_keyboard)
+
+    return markup
+
+
 @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
 def start(message):
     global ADMIN_STATUS, USER_NAME
     bot.send_message(message.chat.id, choice(GREETINGS))
     name = message.from_user.first_name
-    bot.send_message(message.chat.id, name)
+    bot.send_message(message.chat.id, name, reply_markup=start_markup())
 
     USER_NAME = message.chat.username
 
 
-@bot.message_handler(commands=['bye', 'end', 'пока'])
-def bye(message):
-    bot.send_message(message.chat.id, choice(GOODBYES))
+def check(call, chat_id):
+    st = bot.get_chat_member(chat_id, user_id=call.message.chat.id).status
+    return st in ["creator", "administrator", "member"]
 
 
-@bot.message_handler(commands=['command'])
-def admin(message):
+def check_channels(call):
+    markup = types.InlineKeyboardMarkup(row_width=True)
+    if check(call, "-1001649523664") and check(call, '-1001729713697'):
+        bot.send_message(call.message.chat.id, "Спасибо за подписку ✨")
+        markup.add(admin(call))
+    else:
+        bot.send_message(call.message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+
+
+def admin(call):
     global ADMIN_STATUS
-    name, id = message.from_user.username, message.chat.id
+    name, id = call.message.from_user.username, call.message.chat.id
     if name == 'Uniade_bot':
-        name = message.chat.username
+        name = call.message.chat.username
     ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton('Заказать напиток', callback_data='buy_drink')
@@ -65,8 +84,15 @@ def admin(message):
         markup.row(btn_for_admin1)
         btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
         markup.row(btn_for_admin2)
+        btn_for_admin3 = types.InlineKeyboardButton('обращения', callback_data='contact')
+        markup.row(btn_for_admin3)
 
-    bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
+    bot.send_message(call.message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
+
+
+@bot.message_handler(commands=['bye', 'end', 'пока'])
+def bye(message):
+    bot.send_message(message.chat.id, choice(GOODBYES))
 
 
 @bot.callback_query_handler(func=lambda callback: True)
@@ -89,7 +115,8 @@ def callback_message(callback):
         bot.send_message(callback.message.chat.id, text)
     elif callback.data == 'music':
         bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
-
+    elif callback.data == "check":
+        check_channels(callback)
     elif callback.data == 'F_A_Q':
         questions(callback.message)
     elif callback.data == 'qw_1':
@@ -124,6 +151,12 @@ def callback_message(callback):
         ret(callback)
     elif callback.data == 'qw_quit':
         admin(callback.message)
+    elif callback.data == 'contact_the_organizers':
+        markup2 = types.InlineKeyboardMarkup()
+        markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
+        bot.send_message(callback.message.chat.id, "напишите свой вопрос или просьбу", reply_markup=markup2)
+        bot.register_next_step_handler(callback.message, plees)
+
 
 
 @bot.message_handler(content_types=['text'])
@@ -170,6 +203,16 @@ def inp_name(message):
         btn2 = types.KeyboardButton('❌ Нет')
         markup.add(btn1, btn2)
         bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
+
+
+def plees(message):
+    ples = message.text
+    conn = sqlite3.connect('pls.db')
+    cur = conn.cursor()
+    cur.execute(f'INSERT INTO pls (name, please) VALUES ({USER_NAME}, {ples})')
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 def ret(callback):
