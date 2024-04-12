@@ -1,5 +1,6 @@
 import telebot
 import requests
+import xlsxwriter
 from telebot import types
 from random import choice
 from add_new import add_user, add_admin, delete_your_admins
@@ -72,6 +73,8 @@ def admin(message):
         # Временная кнопка
         btn_for_admin3 = types.InlineKeyboardButton('Количество пользователей', callback_data='show_count_of_users')
         markup.row(btn_for_admin3)
+        # Временная кнопка
+        btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
 
 
     bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
@@ -107,6 +110,8 @@ def callback_message(callback):
     # Временная кнопка
     elif callback.data == 'show_count_of_users':
         count_of_users(callback.message)
+    elif callback.data == 'table':
+        table(callback.message)
 
     elif callback.data == 'qw_1':
         bot.send_message(callback.message.chat.id, 'ответ 1')
@@ -258,6 +263,40 @@ def del_admin(message):
     bot.send_message(message.chat.id, 'Внимание_ееее! Вы можете удалить только тех админов, которых вы добавляли')
     bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа")
     bot.register_next_step_handler(message, inp_name)
+
+
+def table(message):
+
+    a, c, gen, p = list(), list(), list(), set()
+
+    site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title=%"
+
+    response = requests.get(site).json()
+
+    for i in range(len(response)):
+        p.add(list(response[i].values())[11])
+
+    print(f'Выберите интересующий турнир: {p}')
+
+    site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title={input()}"
+
+    response = requests.get(site).json()
+
+    for el in response[0].keys():
+        a.append(el)
+    gen.append(a)
+
+    for i in range(len(response)):
+        c.append(list())
+        for el in response[i].keys():
+            c[i].append(response[i][el])
+        gen.append(c[i])
+
+    with xlsxwriter.Workbook('test.xlsx') as workbook:
+        worksheet = workbook.add_worksheet()
+
+        for row_num, data in enumerate(gen):
+            worksheet.write_row(row_num, 0, data)
 
 
 if __name__ == '__main__':
