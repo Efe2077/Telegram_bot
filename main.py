@@ -1,3 +1,5 @@
+from lxml import etree
+
 import telebot
 import requests
 from telebot import types
@@ -245,7 +247,13 @@ def count_of_users(message):
 
     response = requests.get(site)
 
-    bot.send_message(message.chat.id, response.content.decode())
+    bot.send_message(message.chat.id, remove_html_tags(response.content.decode()))
+
+
+def remove_html_tags(text):
+    parser = etree.HTMLParser()
+    tree = etree.fromstring(text, parser)
+    return etree.tostring(tree, encoding='unicode', method='text')
 
 
 def map(message):
