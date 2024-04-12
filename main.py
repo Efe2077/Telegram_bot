@@ -2,11 +2,11 @@ import telebot
 import requests
 from telebot import types
 from random import choice
-from for_questions import send_questions, show_questions
+from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
 from add_new import add_user, add_admin, delete_your_admins
 
-
-bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
+# 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
+bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
 
 
 GREETINGS = ['Привет', 'Приветствую вас',
@@ -21,9 +21,10 @@ GOODBYES = ['До свидания', 'Всего хорошего',
 
 command = None
 ADMIN_STATUS = None
-new_admin_name = str()
+new_admin_name = None
 USER_NAME = None
 quest = None
+printed_work = [None, None]
 consult = show_questions()
 
 
@@ -47,7 +48,7 @@ def bye(message):
 def admin(message):
     global ADMIN_STATUS
     name, id = message.from_user.username, message.chat.id
-    if name == 'Uniade_bot':
+    if name == 'Uniade_bot' or name == 'Program_by_DED_bot':
         name = message.chat.username
     ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
@@ -117,9 +118,14 @@ def callback_message(callback):
     elif callback.data == 'show_questions_from_users':
         show_questions_from_users(callback.message)
 
-    elif [(i[0], i[1]) for i in consult if int(callback.data) == i[0]]:
-        print([(i[0], i[1]) for i in consult if int(callback.data) == i[0]][0][1])
-
+    # Ошибка
+    elif callback.data.isdigit():
+        if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
+            global printed_work
+            command = 'answer_to_question'
+            bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
+            printed_work[0] = consult[int(callback.data) - 1][1]
+            bot.register_next_step_handler(callback.message, answer)
 
     # Временная кнопка
     elif callback.data == 'show_count_of_users':
@@ -173,6 +179,9 @@ def func(message):
 
         elif command == 'send_questions':
             send_questions(message.chat.id, quest)
+
+        elif command == 'answer_to_question':
+            send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         btn1 = types.KeyboardButton('Написать имя еще раз')
@@ -219,7 +228,7 @@ def yes_or_no(message):
 
 
 def buy_drink(message):
-    print(command)
+    bot.send_message(message.chat.id, f'Ваш напиток - {message.text}')
 
 
 def ret(callback):
@@ -294,8 +303,21 @@ def show_questions_from_users(message):
     markup = types.InlineKeyboardMarkup()
     consult = show_questions()
     for i in consult:
-        markup.add(types.InlineKeyboardButton(f'{i[0]}. {i[1]}', callback_data=i[0]))
+        markup.add(types.InlineKeyboardButton(f'{i[1]}', callback_data=i[0]))
     bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
+
+
+def answer(message):
+    global printed_work
+    text = message.text
+    bot.send_message(message.chat.id, text)
+    printed_work[1] = text
+    yes_or_no(message)
+
+
+def send_answer_from_admin(id_of_user, text):
+    bot.send_message(id_of_user,f'Ответ от админа: {text}')
+    delete_questions(printed_work[0])
 
 
 if __name__ == '__main__':
