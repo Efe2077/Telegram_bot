@@ -24,7 +24,7 @@ GOODBYES = ['До свидания', 'Всего хорошего',
 
 command = None
 ADMIN_STATUS = None
-new_admin_name = None
+new_text = None
 USER_NAME = None
 quest = None
 printed_work = [None, None]
@@ -117,7 +117,7 @@ def callback_message(callback):
     elif callback.data == 'contact_the_organizers':
         bot.send_message(callback.message.chat.id, "Напишите вопрос")
         command = 'send_questions'
-        bot.register_next_step_handler(callback.message, ask)
+        bot.register_next_step_handler(callback.message, inp_question)
     elif callback.data == 'show_questions_from_users':
         show_questions_from_users(callback.message)
 
@@ -128,7 +128,7 @@ def callback_message(callback):
             command = 'answer_to_question'
             bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
             printed_work[0] = consult[int(callback.data) - 1][1]
-            bot.register_next_step_handler(callback.message, answer)
+            bot.register_next_step_handler(callback.message, inp_answer)
 
     # Временная кнопка
     elif callback.data == 'show_count_of_users':
@@ -173,17 +173,19 @@ def func(message):
     global command
     if message.text == "✅ Да":
         if command == 'add_admin':
-            mess = add_admin(USER_NAME, new_admin_name)
+            mess = add_admin(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
 
         elif command == 'delete_admin':
-            mess = delete_your_admins(USER_NAME, new_admin_name)
+            mess = delete_your_admins(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
 
         elif command == 'send_questions':
+            ask(message)
             send_questions(message.chat.id, quest)
 
         elif command == 'answer_to_question':
+            answer(message)
             send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -212,9 +214,9 @@ def get_photo(message):
 
 def inp_name(message):
     if message.text:
-        global new_admin_name, command
-        new_admin_name = message.text
-        bot.send_message(message.chat.id, f'Такое имя: {new_admin_name}?')
+        global new_text, command
+        new_text = message.text
+        bot.send_message(message.chat.id, f'Такое имя: {new_text}?')
         yes_or_no(message)
 
 
@@ -295,12 +297,33 @@ def del_admin(message):
     bot.register_next_step_handler(message, inp_name)
 
 
+def inp_question(message):
+    if message.text:
+        global new_text
+        new_text = message.text
+        bot.send_message(message.chat.id, f'Такой вопрос: {new_text}')
+        yes_or_no(message)
+
+
 def ask(message):
     global quest
-    text = message.text
+    text = new_text
     bot.send_message(message.chat.id, f"Ваш вопрос:\n{text}")
     quest = text
+
+
+def inp_answer(message):
+    global new_text
+    new_text = message.text
+    bot.send_message(message.chat.id, f'Такой ответ: {new_text}')
     yes_or_no(message)
+
+
+def answer(message):
+    global printed_work
+    text = new_text
+    bot.send_message(message.chat.id, f'Ваш ответ: {text}')
+    printed_work[1] = text
 
 
 def show_questions_from_users(message):
@@ -310,14 +333,6 @@ def show_questions_from_users(message):
     for i in consult:
         markup.add(types.InlineKeyboardButton(f'{i[1]}', callback_data=i[0]))
     bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
-
-
-def answer(message):
-    global printed_work
-    text = message.text
-    bot.send_message(message.chat.id, text)
-    printed_work[1] = text
-    yes_or_no(message)
 
 
 def send_answer_from_admin(id_of_user, text):
