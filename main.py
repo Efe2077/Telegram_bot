@@ -69,15 +69,16 @@ def check_channels(call):
         bot.send_message(call.message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
 
 
-def admin(call):
+@bot.message_handler(commands=['command'])
+def admin(message):
     global ADMIN_STATUS
-    name, id = call.message.from_user.username, call.message.chat.id
-    if name == 'Uniade_bot':
-        name = call.message.chat.username
+    name, id = message.from_user.username, message.chat.id
+    if name == 'Uniade_bot' or name == 'Program_by_DED_bot':
+        name = message.chat.username
     ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
-    btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
+    btn2 = types.InlineKeyboardButton('Расписание', callback_data='schedule')
     markup.row(btn1, btn2)
     btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
     markup.row(btn3)
@@ -90,6 +91,8 @@ def admin(call):
     btn7 = types.InlineKeyboardButton('FAQ ⁉️', callback_data='F_A_Q')
     btn8 = types.InlineKeyboardButton('Наши соцсети', callback_data='our_social_networks')
     markup.row(btn7, btn8)
+    # btn9 = types.InlineKeyboardButton('Типа кнопка', callback_data='our_social_networks')
+    # markup.row(btn9)
 
     if ADMIN_STATUS:
         btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
@@ -101,12 +104,8 @@ def admin(call):
         # Временная кнопка
         btn_for_admin3 = types.InlineKeyboardButton('Количество пользователей', callback_data='show_count_of_users')
         markup.row(btn_for_admin3)
-        # Временная кнопка
-        btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
-        markup.row(btn_for_admin4)
 
-
-    bot.send_message(call.message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
+    bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
 
 
 @bot.message_handler(commands=['bye', 'end', 'пока'])
@@ -199,7 +198,7 @@ def callback_message(callback):
     elif callback.data == 'qw_quit':
         admin(callback.message)
     elif callback.data in ['Московская зима 2024', 'Спортивная Весна 2024', 'Зимняя Сказка 2023', 'Маленькая принцесса 2024']:
-        slim_shady(callback.message, callback.data)
+        slim_shady(callback.data, callback.message)
 
 
 @bot.message_handler(content_types=['text'])
