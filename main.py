@@ -57,7 +57,7 @@ def admin(message):
     ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
-    btn2 = types.InlineKeyboardButton('Расписание', callback_data='schedule')
+    btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
     markup.row(btn1, btn2)
     btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
     markup.row(btn3)
