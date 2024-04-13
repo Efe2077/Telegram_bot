@@ -39,14 +39,7 @@ def start(message):
     global ADMIN_STATUS, USER_NAME
     bot.send_message(message.chat.id, choice(GREETINGS))
     name = message.from_user.first_name
-    bot.send_message(message.chat.id, name)
-    conn = sqlite3.connect('pls.db')
-    cur = conn.cursor()
 
-    cur.execute('CREATE TABLE IF NOT EXISTS pls (id int auto_increment primary key, name str, please str)')
-    conn.commit()
-    cur.close()
-    conn.close()
     bot.send_message(message.chat.id, name, reply_markup=start_markup())
 
     USER_NAME = message.chat.username
@@ -158,13 +151,7 @@ def callback_message(callback):
     elif callback.data == 'qw_quit':
         admin(callback.message)
 
-        conn = sqlite3.connect('pls.db')
-        cur = conn.cursor()
 
-        cur.execute(f'INSERT INTO pls (name, please) VALUES ({USER_NAME}, {ples})')
-        conn.commit()
-        cur.close()
-        conn.close()
 @bot.message_handler(content_types=['text'])
 def func(message):
     global command
