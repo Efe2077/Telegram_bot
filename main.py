@@ -6,6 +6,7 @@ import xlsxwriter
 from telebot import types
 import sqlite3
 from random import choice
+from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
 from add_new import add_user, add_admin, delete_your_admins
 
@@ -81,6 +82,8 @@ def check_channels(message):
 
 
 def admin(message):
+    a = bot.send_message(message.chat.id, 'delete', reply_markup=ReplyKeyboardRemove())
+    bot.delete_message(message.chat.id, a.message_id)
     global ADMIN_STATUS
     name, id = message.from_user.username, message.chat.id
     if name == 'Uniade_bot':
@@ -142,8 +145,10 @@ def callback_message(callback):
         elif callback.data == 'our_social_networks':
             text = open('data/social_networks.txt', 'r', encoding='utf-8').read()
             bot.send_message(callback.message.chat.id, text)
+            admin(callback.message)
         elif callback.data == 'music':
             bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
+            admin(callback.message)
         elif callback.data == 'buy_drink':
             bot.send_message(callback.message.chat.id, "Сделайте заказ")
             command = 'drink'
@@ -162,7 +167,9 @@ def callback_message(callback):
         elif callback.data == 'show_questions_from_users':
             show_questions_from_users(callback.message)
 
-    # Ошибка
+        elif callback.data in ['Московская зима 2024', 'Спортивная Весна 2024', 'Зимняя Сказка 2023', 'Маленькая принцесса 2024']:
+            slim_shady(callback.message, callback.data)
+
         elif callback.data.isdigit():
             if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
                 global printed_work
@@ -209,8 +216,6 @@ def callback_message(callback):
             ret(callback)
         elif callback.data == 'qw_quit':
             admin(callback.message)
-        elif callback.data in ['Московская зима 2024', 'Спортивная Весна 2024', 'Зимняя Сказка 2023', 'Маленькая принцесса 2024']:
-            slim_shady(callback.message, callback.data)
 
 
 @bot.message_handler(content_types=['text'])
@@ -220,18 +225,22 @@ def func(message):
         if command == 'add_admin':
             mess = add_admin(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
+            admin(message)
 
         elif command == 'delete_admin':
             mess = delete_your_admins(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
+            admin(message)
 
         elif command == 'send_questions':
             ask(message)
             send_questions(message.chat.id, quest)
+            admin(message)
 
         elif command == 'answer_to_question':
             answer(message)
             send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
+            admin(message)
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         btn1 = types.KeyboardButton('Написать еще раз')
@@ -258,15 +267,14 @@ def get_photo(message):
 
 
 def inp_name(message):
-    if message.text:
-        global new_text, command
-        new_text = message.text
-        bot.send_message(message.chat.id, f'Такое имя: {new_text}?')
-        yes_or_no(message)
+    global new_text, command
+    new_text = message.text
+    bot.send_message(message.chat.id, f'Такое имя: {new_text}?')
+    yes_or_no(message)
 
 
 def yes_or_no(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
     btn1 = types.KeyboardButton('✅ Да')
     btn2 = types.KeyboardButton('❌ Нет')
     markup.add(btn1, btn2)
@@ -275,21 +283,20 @@ def yes_or_no(message):
 
 def buy_drink(message):
     bot.send_message(message.chat.id, f'Ваш напиток - {message.text}')
+    admin(message)
 
 
 def ret(callback):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    markup.add(types.InlineKeyboardButton('К вопросам'))
-    bot.send_message(callback.message.chat.id, '.', reply_markup=markup)
+    questions(message=callback.message)
 
 
-# Временная функция
 def count_of_users(message):
     site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getUsersCount"
 
     response = requests.get(site)
 
     bot.send_message(message.chat.id, remove_html_tags(response.content.decode()))
+    admin(message)
 
 
 def remove_html_tags(text):
@@ -300,24 +307,24 @@ def remove_html_tags(text):
 
 def map(message):
     text = message.text
-    if text:
-        bot.send_message(message.chat.id, f'Такое место: {text}?')
-        API_KEY = '40d1649f-0493-4b70-98ba-98533de7710b'
-        site = f"http://geocode-maps.yandex.ru/1.x/?apikey={API_KEY}&geocode={text}&format=json"
+    bot.send_message(message.chat.id, f'Такое место: {text}?')
+    API_KEY = '40d1649f-0493-4b70-98ba-98533de7710b'
+    site = f"http://geocode-maps.yandex.ru/1.x/?apikey={API_KEY}&geocode={text}&format=json"
 
-        response = requests.get(site)
+    response = requests.get(site)
 
-        position = response.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['Point']['pos']
+    position = response.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['Point']['pos']
 
-        answer = f'll={",".join(position.split())}'
+    answer = f'll={",".join(position.split())}'
 
-        resp = requests.get(f"http://static-maps.yandex.ru/1.x/?{answer}&z=16&l=map")
-        map_file = "data/map.jpg"
-        with open(map_file, "wb") as file:
-            file.write(resp.content)
+    resp = requests.get(f"http://static-maps.yandex.ru/1.x/?{answer}&z=16&l=map")
+    map_file = "data/map.jpg"
+    with open(map_file, "wb") as file:
+        file.write(resp.content)
 
-        file = open('data/map.jpg', 'rb')
-        bot.send_photo(message.chat.id, file)
+    file = open('data/map.jpg', 'rb')
+    bot.send_photo(message.chat.id, file)
+    admin(message)
 
 
 def questions(message):
@@ -333,7 +340,7 @@ def questions(message):
     markup2.add(types.InlineKeyboardButton('вопрос 9', callback_data='qw_9'))
     markup2.add(types.InlineKeyboardButton('вопрос 10', callback_data='qw_10'))
     markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
-    bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup2)
+    bot.send_message(message.chat.id, text='Вопросы', reply_markup=markup2)
 
 
 def del_admin(message):
@@ -343,11 +350,10 @@ def del_admin(message):
 
 
 def inp_question(message):
-    if message.text:
-        global new_text
-        new_text = message.text
-        bot.send_message(message.chat.id, f'Такой вопрос: {new_text}')
-        yes_or_no(message)
+    global new_text
+    new_text = message.text
+    bot.send_message(message.chat.id, f'Такой вопрос: {new_text}')
+    yes_or_no(message)
 
 
 def ask(message):
@@ -428,6 +434,9 @@ def slim_shady(message, tour):
 
     with open('test.xlsx', 'rb') as f1:
         bot.send_document(message.chat.id, f1)
+        f1.close()
+
+    admin(message)
 
 
 if __name__ == '__main__':
