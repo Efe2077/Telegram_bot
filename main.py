@@ -9,7 +9,7 @@ from add_new import add_user, add_admin, delete_your_admins
 
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
 # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - мой
-bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
+bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
 
 
 GREETINGS = ['Привет', 'Приветствую вас',

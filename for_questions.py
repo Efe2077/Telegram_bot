@@ -11,7 +11,7 @@ def send_questions(user_id, question):
             cur.execute(f"""UPDATE Users SET Questions = '{question}' WHERE Id = '{user_id}' """)
 
         else:   # Если это НЕ первый вопрос
-            question = f'{question} {result[0][0]}'
+            question = f'{result[0][0]} {question}'
             cur.execute(f"""UPDATE Users SET Questions = '{question}' WHERE Id = '{user_id}' """)
     else:
         print('Вы уже задавали такой вопрос')
