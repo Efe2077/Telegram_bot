@@ -178,7 +178,6 @@ def callback_message(callback):
                 printed_work[0] = consult[int(callback.data) - 1][1]
                 bot.register_next_step_handler(callback.message, inp_answer)
 
-        # Временная кнопка
         elif callback.data == 'show_count_of_users':
             count_of_users(callback.message)
         elif callback.data == 'table':
