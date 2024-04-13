@@ -187,21 +187,17 @@ def func(message):
             send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        btn1 = types.KeyboardButton('Написать имя еще раз')
+        btn1 = types.KeyboardButton('Написать еще раз')
         btn2 = types.KeyboardButton('Назад')
         markup.add(btn1, btn2)
         bot.send_message(message.chat.id, 'Выберете:', reply_markup=markup)
-    elif message.text == 'Написать имя еще раз':
-        bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
-        file = open('data/telegram_username.jpg', 'rb')
-        bot.send_photo(message.chat.id, file)
-        command = 'add_admin'
+    elif message.text == 'Написать еще раз':
+        bot.send_message(message.chat.id, "Повторите")
         bot.register_next_step_handler(message, inp_name)
 
     elif message.text == 'Назад':
-        for number in range(-7, +1, +1):
-            bot.delete_message(message.chat.id, message.message_id + number)
+        admin(message)
 
     elif message.text == 'К вопросам':
         questions(message)
