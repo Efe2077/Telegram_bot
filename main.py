@@ -1,4 +1,5 @@
 from lxml import etree
+
 import telebot
 import requests
 import xlsxwriter
@@ -25,7 +26,7 @@ GOODBYES = ['До свидания', 'Всего хорошего',
 
 command = None
 ADMIN_STATUS = None
-new_admin_name = None
+new_text = None
 USER_NAME = None
 quest = None
 printed_work = [None, None]
@@ -157,18 +158,18 @@ def callback_message(callback):
         elif callback.data == 'contact_the_organizers':
             bot.send_message(callback.message.chat.id, "Напишите вопрос")
             command = 'send_questions'
-            bot.register_next_step_handler(callback.message, ask)
+            bot.register_next_step_handler(callback.message, inp_question)
         elif callback.data == 'show_questions_from_users':
             show_questions_from_users(callback.message)
 
-        # Ошибка
+    # Ошибка
         elif callback.data.isdigit():
             if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
                 global printed_work
                 command = 'answer_to_question'
                 bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
                 printed_work[0] = consult[int(callback.data) - 1][1]
-                bot.register_next_step_handler(callback.message, answer)
+                bot.register_next_step_handler(callback.message, inp_answer)
 
         # Временная кнопка
         elif callback.data == 'show_count_of_users':
@@ -217,35 +218,33 @@ def func(message):
     global command
     if message.text == "✅ Да":
         if command == 'add_admin':
-            mess = add_admin(USER_NAME, new_admin_name)
+            mess = add_admin(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
 
         elif command == 'delete_admin':
-            mess = delete_your_admins(USER_NAME, new_admin_name)
+            mess = delete_your_admins(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
 
         elif command == 'send_questions':
+            ask(message)
             send_questions(message.chat.id, quest)
 
         elif command == 'answer_to_question':
+            answer(message)
             send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        btn1 = types.KeyboardButton('Написать имя еще раз')
+        btn1 = types.KeyboardButton('Написать еще раз')
         btn2 = types.KeyboardButton('Назад')
         markup.add(btn1, btn2)
         bot.send_message(message.chat.id, 'Выберете:', reply_markup=markup)
-    elif message.text == 'Написать имя еще раз':
-        bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
-        file = open('data/telegram_username.jpg', 'rb')
-        bot.send_photo(message.chat.id, file)
-        command = 'add_admin'
+    elif message.text == 'Написать еще раз':
+        bot.send_message(message.chat.id, "Повторите")
         bot.register_next_step_handler(message, inp_name)
 
     elif message.text == 'Назад':
-        for number in range(-7, +1, +1):
-            bot.delete_message(message.chat.id, message.message_id + number)
+        admin(message)
 
     elif message.text == 'К вопросам':
         questions(message)
@@ -260,9 +259,9 @@ def get_photo(message):
 
 def inp_name(message):
     if message.text:
-        global new_admin_name, command
-        new_admin_name = message.text
-        bot.send_message(message.chat.id, f'Такое имя: {new_admin_name}?')
+        global new_text, command
+        new_text = message.text
+        bot.send_message(message.chat.id, f'Такое имя: {new_text}?')
         yes_or_no(message)
 
 
@@ -343,12 +342,33 @@ def del_admin(message):
     bot.register_next_step_handler(message, inp_name)
 
 
+def inp_question(message):
+    if message.text:
+        global new_text
+        new_text = message.text
+        bot.send_message(message.chat.id, f'Такой вопрос: {new_text}')
+        yes_or_no(message)
+
+
 def ask(message):
     global quest
-    text = message.text
+    text = new_text
     bot.send_message(message.chat.id, f"Ваш вопрос:\n{text}")
     quest = text
+
+
+def inp_answer(message):
+    global new_text
+    new_text = message.text
+    bot.send_message(message.chat.id, f'Такой ответ: {new_text}')
     yes_or_no(message)
+
+
+def answer(message):
+    global printed_work
+    text = new_text
+    bot.send_message(message.chat.id, f'Ваш ответ: {text}')
+    printed_work[1] = text
 
 
 def show_questions_from_users(message):
@@ -360,16 +380,8 @@ def show_questions_from_users(message):
     bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
 
 
-def answer(message):
-    global printed_work
-    text = message.text
-    bot.send_message(message.chat.id, text)
-    printed_work[1] = text
-    yes_or_no(message)
-
-
 def send_answer_from_admin(id_of_user, text):
-    bot.send_message(id_of_user,f'Ответ от админа: {text}')
+    bot.send_message(id_of_user, f'Ответ от админа: {text}')
     delete_questions(printed_work[0])
 
 
