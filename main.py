@@ -1,3 +1,5 @@
+from lxml import etree
+
 import telebot
 import requests
 from telebot import types
@@ -6,6 +8,7 @@ from for_questions import send_questions, show_questions, get_id_from_question, 
 from add_new import add_user, add_admin, delete_your_admins
 
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
+# 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - мой
 bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
 
 
@@ -129,7 +132,7 @@ def callback_message(callback):
 
     # Временная кнопка
     elif callback.data == 'show_count_of_users':
-        coint_of_users(callback.message)
+        count_of_users(callback.message)
 
     elif callback.data == 'qw_1':
         bot.send_message(callback.message.chat.id, 'ответ 1')
@@ -238,12 +241,18 @@ def ret(callback):
 
 
 # Временная функция
-def coint_of_users(message):
+def count_of_users(message):
     site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getUsersCount"
 
     response = requests.get(site)
 
-    bot.send_message(message.chat.id, response.content.decode())
+    bot.send_message(message.chat.id, remove_html_tags(response.content.decode()))
+
+
+def remove_html_tags(text):
+    parser = etree.HTMLParser()
+    tree = etree.fromstring(text, parser)
+    return etree.tostring(tree, encoding='unicode', method='text')
 
 
 def map(message):
@@ -316,7 +325,7 @@ def answer(message):
 
 
 def send_answer_from_admin(id_of_user, text):
-    bot.send_message(id_of_user,f'Ответ от админа: {text}')
+    bot.send_message(id_of_user, f'Ответ от админа: {text}')
     delete_questions(printed_work[0])
 
 

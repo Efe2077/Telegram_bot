@@ -59,3 +59,4 @@ def get_id_from_question(text):
             return result[0][0]
         else:
             return 'На данный вопрос уже ответили'
+        
