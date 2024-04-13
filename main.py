@@ -92,8 +92,6 @@ def admin(call):
         markup.row(btn_for_admin1)
         btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
         markup.row(btn_for_admin2)
-        btn_for_admin3 = types.InlineKeyboardButton('обращения', callback_data='contact')
-        markup.row(btn_for_admin3)
 
     bot.send_message(call.message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
 
@@ -159,12 +157,6 @@ def callback_message(callback):
         ret(callback)
     elif callback.data == 'qw_quit':
         admin(callback.message)
-    elif callback.data == 'contact_the_organizers':
-        markup2 = types.InlineKeyboardMarkup()
-        markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
-        bot.send_message(callback.message.chat.id, "напишите свой вопрос или просьбу", reply_markup=markup2)
-        bot.register_next_step_handler(callback.message, plees)
-
 
         conn = sqlite3.connect('pls.db')
         cur = conn.cursor()
@@ -217,16 +209,6 @@ def inp_name(message):
         btn2 = types.KeyboardButton('❌ Нет')
         markup.add(btn1, btn2)
         bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
-
-
-def plees(message):
-    ples = message.text
-    conn = sqlite3.connect('pls.db')
-    cur = conn.cursor()
-    cur.execute(f'INSERT INTO pls (name, please) VALUES ({USER_NAME}, {ples})')
-    conn.commit()
-    cur.close()
-    conn.close()
 
 
 def ret(callback):
