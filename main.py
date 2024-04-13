@@ -48,32 +48,42 @@ def start(message):
     bot.send_message(message.chat.id, choice(GREETINGS))
     name = message.from_user.first_name
 
-    bot.send_message(message.chat.id, name, reply_markup=start_markup())
+    if name == 'Uniade bot':
+        name = message.chat.first_name
+        USER_NAME = message.chat.username
 
-    USER_NAME = message.chat.username
+    bot.send_message(message.chat.id, name)
 
-    admin(message)
+    if check(message, message.chat.id) and check_channels_start(message):
+        admin(message)
 
 
-def check(call, chat_id):
-    st = bot.get_chat_member(chat_id, user_id=call.message.chat.id).status
+def check(message, chat_id):
+    st = bot.get_chat_member(chat_id, user_id=message.chat.id).status
     return st in ["creator", "administrator", "member"]
 
 
-def check_channels(call):
+def check_channels_start(message):
     markup = types.InlineKeyboardMarkup(row_width=True)
-    if check(call, "-1001649523664") and check(call, '-1001729713697'):
-        bot.send_message(call.message.chat.id, "Спасибо за подписку ✨")
-        markup.add(admin(call))
+    if check(message, "-1001649523664") and check(message, '-1001729713697'):
+        bot.send_message(message.chat.id, "Спасибо за подписку ✨")
+        markup.add(admin(message))
     else:
-        bot.send_message(call.message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+        bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
 
 
-def admin(call):
+def check_channels(message):
+    if check(message, "-1001649523664") and check(message, '-1001729713697'):
+        return True
+    else:
+        bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+
+
+def admin(message):
     global ADMIN_STATUS
-    name, id = call.message.from_user.username, call.message.chat.id
+    name, id = message.from_user.username, message.chat.id
     if name == 'Uniade_bot':
-        name = call.message.chat.username
+        name = message.chat.username
     ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
@@ -105,8 +115,7 @@ def admin(call):
         btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
         markup.row(btn_for_admin4)
 
-
-    bot.send_message(call.message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
+    bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
 
 
 @bot.message_handler(commands=['bye', 'end', 'пока'])
@@ -116,90 +125,91 @@ def bye(message):
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_message(callback):
-    global command, USER_NAME
-    USER_NAME = callback.message.chat.username
-    if callback.data == 'add_new_admin':
-        bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
+    if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
+        global command, USER_NAME
+        USER_NAME = callback.message.chat.username
+        if callback.data == 'add_new_admin':
+            bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
-        file = open('data/telegram_username.jpg', 'rb')
-        bot.send_photo(callback.message.chat.id, file)
-        command = 'add_admin'
-        bot.register_next_step_handler(callback.message, inp_name)
-    elif callback.data == 'delete_admin':
-        command = 'delete_admin'
-        del_admin(callback.message)
-    elif callback.data == 'our_social_networks':
-        text = open('data/social_networks.txt', 'r', encoding='utf-8').read()
-        bot.send_message(callback.message.chat.id, text)
-    elif callback.data == 'music':
-        bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
-    elif callback.data == 'buy_drink':
-        bot.send_message(callback.message.chat.id, "Сделайте заказ")
-        command = 'drink'
-        bot.register_next_step_handler(callback.message, buy_drink)
-    elif callback.data == "check":
-        check_channels(callback)
-    elif callback.data == 'F_A_Q':
-        questions(callback.message)
-    elif callback.data == 'grade':
-        bot.send_message(callback.message.chat.id, "Напишите место")
-        bot.register_next_step_handler(callback.message, map)
-    elif callback.data == 'contact_the_organizers':
-        bot.send_message(callback.message.chat.id, "Напишите вопрос")
-        command = 'send_questions'
-        bot.register_next_step_handler(callback.message, ask)
-    elif callback.data == 'show_questions_from_users':
-        show_questions_from_users(callback.message)
+            file = open('data/telegram_username.jpg', 'rb')
+            bot.send_photo(callback.message.chat.id, file)
+            command = 'add_admin'
+            bot.register_next_step_handler(callback.message, inp_name)
+        elif callback.data == 'delete_admin':
+            command = 'delete_admin'
+            del_admin(callback.message)
+        elif callback.data == 'our_social_networks':
+            text = open('data/social_networks.txt', 'r', encoding='utf-8').read()
+            bot.send_message(callback.message.chat.id, text)
+        elif callback.data == 'music':
+            bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
+        elif callback.data == 'buy_drink':
+            bot.send_message(callback.message.chat.id, "Сделайте заказ")
+            command = 'drink'
+            bot.register_next_step_handler(callback.message, buy_drink)
+        elif callback.data == 'check':
+            start(callback.message)
+        elif callback.data == 'F_A_Q':
+            questions(callback.message)
+        elif callback.data == 'grade':
+            bot.send_message(callback.message.chat.id, "Напишите место")
+            bot.register_next_step_handler(callback.message, map)
+        elif callback.data == 'contact_the_organizers':
+            bot.send_message(callback.message.chat.id, "Напишите вопрос")
+            command = 'send_questions'
+            bot.register_next_step_handler(callback.message, ask)
+        elif callback.data == 'show_questions_from_users':
+            show_questions_from_users(callback.message)
 
-    # Ошибка
-    elif callback.data.isdigit():
-        if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
-            global printed_work
-            command = 'answer_to_question'
-            bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
-            printed_work[0] = consult[int(callback.data) - 1][1]
-            bot.register_next_step_handler(callback.message, answer)
+        # Ошибка
+        elif callback.data.isdigit():
+            if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
+                global printed_work
+                command = 'answer_to_question'
+                bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
+                printed_work[0] = consult[int(callback.data) - 1][1]
+                bot.register_next_step_handler(callback.message, answer)
 
-    # Временная кнопка
-    elif callback.data == 'show_count_of_users':
-        count_of_users(callback.message)
-    elif callback.data == 'table':
-        table(callback.message)
+        # Временная кнопка
+        elif callback.data == 'show_count_of_users':
+            count_of_users(callback.message)
+        elif callback.data == 'table':
+            table(callback.message)
 
-    elif callback.data == 'qw_1':
-        bot.send_message(callback.message.chat.id, 'ответ 1')
-        ret(callback)
-    elif callback.data == 'qw_2':
-        bot.send_message(callback.message.chat.id, 'ответ 2')
-        ret(callback)
-    elif callback.data == 'qw_3':
-        bot.send_message(callback.message.chat.id, 'ответ 3')
-        ret(callback)
-    elif callback.data == 'qw_4':
-        bot.send_message(callback.message.chat.id, 'ответ 4')
-        ret(callback)
-    elif callback.data == 'qw_5':
-        bot.send_message(callback.message.chat.id, 'ответ 5')
-        ret(callback)
-    elif callback.data == 'qw_6':
-        bot.send_message(callback.message.chat.id, 'ответ 6')
-        ret(callback)
-    elif callback.data == 'qw_7':
-        bot.send_message(callback.message.chat.id, 'ответ 7')
-        ret(callback)
-    elif callback.data == 'qw_8':
-        bot.send_message(callback.message.chat.id, 'ответ 8')
-        ret(callback)
-    elif callback.data == 'qw_9':
-        bot.send_message(callback.message.chat.id, 'ответ 9')
-        ret(callback)
-    elif callback.data == 'qw_10':
-        bot.send_message(callback.message.chat.id, 'ответ 10')
-        ret(callback)
-    elif callback.data == 'qw_quit':
-        admin(callback.message)
-    elif callback.data in ['Московская зима 2024', 'Спортивная Весна 2024', 'Зимняя Сказка 2023', 'Маленькая принцесса 2024']:
-        slim_shady(callback.message, callback.data)
+        elif callback.data == 'qw_1':
+            bot.send_message(callback.message.chat.id, 'ответ 1')
+            ret(callback)
+        elif callback.data == 'qw_2':
+            bot.send_message(callback.message.chat.id, 'ответ 2')
+            ret(callback)
+        elif callback.data == 'qw_3':
+            bot.send_message(callback.message.chat.id, 'ответ 3')
+            ret(callback)
+        elif callback.data == 'qw_4':
+            bot.send_message(callback.message.chat.id, 'ответ 4')
+            ret(callback)
+        elif callback.data == 'qw_5':
+            bot.send_message(callback.message.chat.id, 'ответ 5')
+            ret(callback)
+        elif callback.data == 'qw_6':
+            bot.send_message(callback.message.chat.id, 'ответ 6')
+            ret(callback)
+        elif callback.data == 'qw_7':
+            bot.send_message(callback.message.chat.id, 'ответ 7')
+            ret(callback)
+        elif callback.data == 'qw_8':
+            bot.send_message(callback.message.chat.id, 'ответ 8')
+            ret(callback)
+        elif callback.data == 'qw_9':
+            bot.send_message(callback.message.chat.id, 'ответ 9')
+            ret(callback)
+        elif callback.data == 'qw_10':
+            bot.send_message(callback.message.chat.id, 'ответ 10')
+            ret(callback)
+        elif callback.data == 'qw_quit':
+            admin(callback.message)
+        elif callback.data in ['Московская зима 2024', 'Спортивная Весна 2024', 'Зимняя Сказка 2023', 'Маленькая принцесса 2024']:
+            slim_shady(callback.message, callback.data)
 
 
 @bot.message_handler(content_types=['text'])
