@@ -5,7 +5,6 @@ import os
 import requests
 import xlsxwriter
 from telebot import types
-import shutil
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
@@ -314,13 +313,12 @@ def send_audio_into_folder(message):
             with open(src, 'wb') as new_file:
                 new_file.write(downloaded_file)
 
-            download_file_to_club(your_club, fio, name, new_file)
+            download_file_to_club(your_club, fio, name)
+            admin(message)
         else:
             bot.send_message(message.chat.id, 'Поменяйте название файла')
 
-        shutil.rmtree(f'data/users_files/{fio}')
 
-        admin(message)
 
 
 def inp_folder(message):
