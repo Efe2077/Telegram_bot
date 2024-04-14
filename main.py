@@ -201,15 +201,18 @@ def callback_message(callback):
                          'Скорее смотреть!!!',
                          reply_markup=markup)
             admin(callback.message)
-        #elif callback.data == 'qw_1':
-            # file = open('data/checkroom1.jpg', 'rb')
-            # bot.send_photo(callback.message.chat.id, file)
-            # file = open('data/checkroom2.jpg', 'rb')
-            # bot.send_photo(callback.message.chat.id, file)
-            # file = open('data/checkroom3.jpg', 'rb')
-            # bot.send_photo(callback.message.chat.id, file)
-            # bot.send_message(callback.message.chat.id, 'описание пути')
-            # ret(callback)
+        elif callback.data == 'qw_1':
+            file = open('data/checkroom0.jpg', 'rb')
+            bot.send_photo(callback.message.chat.id, file)
+            bot.send_message(callback.message.chat.id,
+                             'Войдя через главный вход, проходите через турникет и заворачиваете направо')
+            file = open('data/checkroom1.jpg', 'rb')
+            bot.send_photo(callback.message.chat.id, file)
+            bot.send_message(callback.message.chat.id, 'проходите по коридору вперед')
+            file = open('data/checkroom2.jpg', 'rb')
+            bot.send_photo(callback.message.chat.id, file)
+            bot.send_message(callback.message.chat.id, 'поворачиваете налево и входите в раздевалку, вы на месте!')
+            ret(callback)
         elif callback.data == 'qw_2':
             file = open('data/rating1.png', 'rb')
             bot.send_photo(callback.message.chat.id, file)
@@ -493,6 +496,7 @@ def grade(message):
         admin(message)
     except Exception:
         print(f"Неправильный ввод: {b}")
+        bot.send_message(message.chat.id, f"Неправильный ввод: {b}")
 
 def show_questions_from_users(message):
     global consult
