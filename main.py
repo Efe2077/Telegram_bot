@@ -1,18 +1,20 @@
 from lxml import etree
 
 import telebot
+import os
 import requests
 import xlsxwriter
 from telebot import types
-import sqlite3
+import shutil
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
 from add_new import add_user, add_admin, delete_your_admins
+from for_yandex_disk import download_file_to_club
 
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
 # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - мой
-bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
+bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
 
 
 GREETINGS = ['Привет', 'Приветствую вас',
@@ -25,68 +27,86 @@ GOODBYES = ['До свидания', 'Всего хорошего',
              'Прощайте', 'Бывай', 'Пока',
             ]
 
+
+def get_clubs():
+    gen, p = list(), set()
+
+    site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title=%"
+
+    response = requests.get(site).json()
+
+    for i in range(len(response)):
+        p.add(list(response[i].values())[11])
+
+    return list(p)
+
+
 command = None
 ADMIN_STATUS = None
 new_text = None
 USER_NAME = None
 quest = None
+fio = None
 printed_work = [None, None]
 consult = show_questions()
+your_club = None
+CLUB = get_clubs()
 
 
-def start_markup():
-    markup = types.InlineKeyboardMarkup(row_width=True)
-    link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
-    link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/rg_child_league")
-    check_keyboard = types.InlineKeyboardButton(text="Проверить", callback_data="check")
-    markup.add(link_keyboard1, link_keyboard2, check_keyboard)
+# def start_markup():
+#     markup = types.InlineKeyboardMarkup(row_width=True)
+#     link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
+#     link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/rg_child_league")
+#     check_keyboard = types.InlineKeyboardButton(text="Проверить", callback_data="check")
+#     markup.add(link_keyboard1, link_keyboard2, check_keyboard)
+#
+#     return markup
 
-    return markup
+
+
+# def start(message):
+#     global ADMIN_STATUS, USER_NAME
+#     bot.send_message(message.chat.id, choice(GREETINGS))
+#     name = message.from_user.first_name
+#
+#     if name == 'Uniade bot':
+#         name = message.chat.first_name
+#         USER_NAME = message.chat.username
+#
+#     bot.send_message(message.chat.id, name)
+#
+#     if check(message, message.chat.id) and check_channels_start(message):
+#         admin(message)
+#
+#
+# def check(message, chat_id):
+#     st = bot.get_chat_member(chat_id, user_id=message.chat.id).status
+#     return st in ["creator", "administrator", "member"]
+#
+#
+# def check_channels_start(message):
+#     markup = types.InlineKeyboardMarkup(row_width=True)
+#     if check(message, "-1001649523664") and check(message, '-1001729713697'):
+#         bot.send_message(message.chat.id, "Спасибо за подписку ✨")
+#         markup.add(admin(message))
+#     else:
+#         bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+#
+#
+# def check_channels(message):
+#     if check(message, "-1001649523664") and check(message, '-1001729713697'):
+#         return True
+#     else:
+#         bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
 
 
 @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
-def start(message):
-    global ADMIN_STATUS, USER_NAME
-    bot.send_message(message.chat.id, choice(GREETINGS))
-    name = message.from_user.first_name
-
-    if name == 'Uniade bot':
-        name = message.chat.first_name
-        USER_NAME = message.chat.username
-
-    bot.send_message(message.chat.id, name)
-
-    if check(message, message.chat.id) and check_channels_start(message):
-        admin(message)
-
-
-def check(message, chat_id):
-    st = bot.get_chat_member(chat_id, user_id=message.chat.id).status
-    return st in ["creator", "administrator", "member"]
-
-
-def check_channels_start(message):
-    markup = types.InlineKeyboardMarkup(row_width=True)
-    if check(message, "-1001649523664") and check(message, '-1001729713697'):
-        bot.send_message(message.chat.id, "Спасибо за подписку ✨")
-        markup.add(admin(message))
-    else:
-        bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
-
-
-def check_channels(message):
-    if check(message, "-1001649523664") and check(message, '-1001729713697'):
-        return True
-    else:
-        bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
-
-
 def admin(message):
     a = bot.send_message(message.chat.id, 'delete', reply_markup=ReplyKeyboardRemove())
     bot.delete_message(message.chat.id, a.message_id)
     global ADMIN_STATUS
     name, id = message.from_user.username, message.chat.id
-    if name == 'Uniade_bot':
+    if name == 'Uniade_bot' or name == 'Program_by_DED_bot':
         name = message.chat.username
     ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
@@ -129,8 +149,9 @@ def bye(message):
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_message(callback):
-    if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
-        global command, USER_NAME
+    # if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
+    if True:
+        global command, USER_NAME, new_text
         USER_NAME = callback.message.chat.username
         if callback.data == 'add_new_admin':
             bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
@@ -147,19 +168,19 @@ def callback_message(callback):
             bot.send_message(callback.message.chat.id, text)
             admin(callback.message)
         elif callback.data == 'music':
-            bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
-            admin(callback.message)
+            command = 'send_file_to_folder'
+            show_club(callback.message)
         elif callback.data == 'buy_drink':
             bot.send_message(callback.message.chat.id, "Сделайте заказ")
             command = 'drink'
             bot.register_next_step_handler(callback.message, buy_drink)
-        elif callback.data == 'check':
-            start(callback.message)
+        # elif callback.data == 'check':
+        #     start(callback.message)
         elif callback.data == 'F_A_Q':
             questions(callback.message)
         elif callback.data == 'grade':
             bot.send_message(callback.message.chat.id, "Напишите место")
-            bot.register_next_step_handler(callback.message, map)
+            bot.register_next_step_handler(callback.message, location)
         elif callback.data == 'contact_the_organizers':
             bot.send_message(callback.message.chat.id, "Напишите вопрос")
             command = 'send_questions'
@@ -167,8 +188,14 @@ def callback_message(callback):
         elif callback.data == 'show_questions_from_users':
             show_questions_from_users(callback.message)
 
-        elif callback.data in ['Московская зима 2024', 'Спортивная Весна 2024', 'Зимняя Сказка 2023', 'Маленькая принцесса 2024']:
-            slim_shady(callback.message, callback.data)
+        elif callback.data in CLUB:
+            if command == 'get_table':
+                slim_shady(callback.message, callback.data)
+            elif command == 'send_file_to_folder':
+                global your_club
+                your_club = callback.data
+                bot.send_message(callback.message.chat.id, 'Напишите ФИО')
+                bot.register_next_step_handler(callback.message, inp_folder)
 
         elif callback.data.isdigit():
             if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
@@ -182,6 +209,7 @@ def callback_message(callback):
             count_of_users(callback.message)
         elif callback.data == 'table':
             table(callback.message)
+            command = 'get_table'
 
         elif callback.data == 'qw_1':
             bot.send_message(callback.message.chat.id, 'ответ 1')
@@ -240,6 +268,11 @@ def func(message):
             answer(message)
             send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
             admin(message)
+
+        elif command == 'inputting_folder_name':
+            confirming_folder(message)
+            command = 'sending_file'
+            bot.send_message(message.chat.id, 'Прикрепите файл форматом mp3')
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         btn1 = types.KeyboardButton('Написать еще раз')
@@ -265,8 +298,47 @@ def get_photo(message):
     bot.reply_to(message, 'Здорово! Не хотите ли Вы предложить это фото для поста в канале?', reply_markup=markup)
 
 
-def inp_name(message):
+@bot.message_handler(content_types=['audio'])
+def send_audio_into_folder(message):
+    if command == 'sending_file':
+        file_info = bot.get_file(message.audio.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        if fio not in os.listdir('data/users_files'):
+            os.mkdir(f'data/users_files/{fio}')
+
+        name = message.audio.file_name
+
+        src = f'data/users_files/{fio}/' + name
+
+        if name not in os.listdir(f'data/users_files/{fio}'):
+            with open(src, 'wb') as new_file:
+                new_file.write(downloaded_file)
+
+            download_file_to_club(your_club, fio, name, new_file)
+        else:
+            bot.send_message(message.chat.id, 'Поменяйте название файла')
+
+        shutil.rmtree(f'data/users_files/{fio}')
+
+        admin(message)
+
+
+def inp_folder(message):
     global new_text, command
+    new_text = message.text
+    bot.send_message(message.chat.id, f'Такая папка: {new_text}?')
+    command = 'inputting_folder_name'
+    yes_or_no(message)
+
+
+def confirming_folder(message):
+    global command, fio
+    fio = new_text
+    bot.send_message(message.chat.id, f'Ваша папка - {fio}')
+
+
+def inp_name(message):
+    global new_text
     new_text = message.text
     bot.send_message(message.chat.id, f'Такое имя: {new_text}?')
     yes_or_no(message)
@@ -304,7 +376,7 @@ def remove_html_tags(text):
     return etree.tostring(tree, encoding='unicode', method='text')
 
 
-def map(message):
+def location(message):
     text = message.text
     bot.send_message(message.chat.id, f'Такое место: {text}?')
     API_KEY = '40d1649f-0493-4b70-98ba-98533de7710b'
@@ -376,6 +448,15 @@ def answer(message):
     printed_work[1] = text
 
 
+def show_club(message):
+    markup = types.InlineKeyboardMarkup()
+    for club in CLUB:
+        btn = types.InlineKeyboardButton(club, callback_data=club)
+        markup.add(btn)
+
+    bot.send_message(message.chat.id, 'Выберите папку:', reply_markup=markup)
+
+
 def show_questions_from_users(message):
     global consult
     markup = types.InlineKeyboardMarkup()
@@ -391,19 +472,9 @@ def send_answer_from_admin(id_of_user, text):
 
 
 def table(message):
-
-    gen, p = list(), set()
-
-    site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title=%"
-
-    response = requests.get(site).json()
-
-    for i in range(len(response)):
-        p.add(list(response[i].values())[11])
-
     markup = types.InlineKeyboardMarkup()
-    consult = p
-    for i in consult:
+
+    for i in CLUB:
         markup.add(types.InlineKeyboardButton(f'{i}', callback_data=i))
     bot.send_message(message.chat.id, 'Выберите интересующий турнир:', reply_markup=markup)
 
