@@ -90,15 +90,15 @@ def admin(message):
         name = message.chat.username
     ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
-    btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
-    btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
-    markup.row(btn1, btn2)
-    btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
-    markup.row(btn3)
+    #btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
+    #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
+    #markup.row(btn1, btn2)
+    #btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
+    #markup.row(btn3)
     btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
     markup.row(btn4)
-    btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
-    markup.row(btn5)
+    #btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
+    #markup.row(btn5)
     btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='contact_the_organizers')
     markup.row(btn6)
     btn7 = types.InlineKeyboardButton('FAQ ⁉️', callback_data='F_A_Q')
@@ -152,14 +152,14 @@ def callback_message(callback):
         elif callback.data == 'buy_drink':
             bot.send_message(callback.message.chat.id, "Сделайте заказ")
             command = 'drink'
-            bot.register_next_step_handler(callback.message, buy_drink)
+            bot.register_next_step_handler(callback.message, inp_question)
         elif callback.data == 'check':
             start(callback.message)
         elif callback.data == 'F_A_Q':
             questions(callback.message)
         elif callback.data == 'grade':
-            bot.send_message(callback.message.chat.id, "Напишите место")
-            bot.register_next_step_handler(callback.message, map)
+            bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:")
+            bot.register_next_step_handler(callback.message, grade)
         elif callback.data == 'contact_the_organizers':
             bot.send_message(callback.message.chat.id, "Напишите вопрос")
             command = 'send_questions'
@@ -231,12 +231,10 @@ def func(message):
             mess = delete_your_admins(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
             admin(message)
-
         elif command == 'send_questions':
             ask(message)
             send_questions(message.chat.id, quest)
             admin(message)
-
         elif command == 'answer_to_question':
             answer(message)
             send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
@@ -356,6 +354,13 @@ def inp_question(message):
     yes_or_no(message)
 
 
+def inp_order(message):
+    global new_order
+    new_order = message.text
+    bot.send_message(message.chat.id, f'Такой вопрос: {new_text}')
+    yes_or_no(message)
+
+
 def ask(message):
     global quest
     text = new_text
@@ -376,6 +381,21 @@ def answer(message):
     bot.send_message(message.chat.id, f'Ваш ответ: {text}')
     printed_work[1] = text
 
+
+def grade(message):
+    try:
+        b = message.text
+        a = message.text.split(' ')
+        name, last_name = a[1], a[0]
+
+        site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getScore&lastname={last_name}&name={name}"
+
+        response = requests.get(site).json()
+
+        bot.send_message(message.chat.id, response[0]['sum_score'])
+        admin(message)
+    except Exception:
+        print(f"Неправильный ввод: {b}")
 
 def show_questions_from_users(message):
     global consult
