@@ -11,13 +11,19 @@ for el in Y.listdir('/'):
 
 def download_file_to_club(club, folder, file_name):
     if club in WHOLE_CLUBS:
+        check_folder(club, folder)
         Y.upload(f'data/users_files/{folder}/{file_name}', f'{club}/{folder}/{file_name}')
         shutil.rmtree(f'data/users_files/{folder}')
 
 
-def check_file_in_folder(club, folder, file_name):
-    for el in Y.listdir(f'/{club}'):
-        print(el['name'])
+def check_folder(club, folder):
+    the_inside = []
 
+    for elem in Y.listdir(f'/{club}'):
+        the_inside.append(elem['name'])
 
-download_file_to_club('Маленькая принцесса 2024', 'Кочак Эфе', 'Minecraft2.mp3')
+    if the_inside:
+        if folder not in the_inside:
+            Y.mkdir(f'/{club}/{folder}')
+    else:
+        Y.mkdir(f'/{club}/{folder}')

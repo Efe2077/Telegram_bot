@@ -22,8 +22,8 @@ GREETINGS = ['Привет', 'Приветствую вас',
              ]
 
 GOODBYES = ['До свидания', 'Всего хорошего',
-             'Всего доброго', 'До встречи',
-             'Прощайте', 'Бывай', 'Пока',
+            'Всего доброго', 'До встречи',
+            'Прощайте', 'Бывай', 'Пока',
             ]
 
 
@@ -313,12 +313,11 @@ def send_audio_into_folder(message):
             with open(src, 'wb') as new_file:
                 new_file.write(downloaded_file)
 
+            print(your_club, fio, name)
             download_file_to_club(your_club, fio, name)
             admin(message)
         else:
             bot.send_message(message.chat.id, 'Поменяйте название файла')
-
-
 
 
 def inp_folder(message):
@@ -384,9 +383,9 @@ def location(message):
 
     position = response.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['Point']['pos']
 
-    answer = f'll={",".join(position.split())}'
+    ans = f'll={",".join(position.split())}'
 
-    resp = requests.get(f"http://static-maps.yandex.ru/1.x/?{answer}&z=16&l=map")
+    resp = requests.get(f"http://static-maps.yandex.ru/1.x/?{ans}&z=16&l=map")
     map_file = "data/map.jpg"
     with open(map_file, "wb") as file:
         file.write(resp.content)
