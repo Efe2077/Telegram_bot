@@ -11,9 +11,13 @@ for el in Y.listdir('/'):
 
 def download_file_to_club(club, folder, file_name):
     if club in WHOLE_CLUBS:
-        check_folder(club, folder)
-        Y.upload(f'data/users_files/{folder}/{file_name}', f'{club}/{folder}/{file_name}')
-        shutil.rmtree(f'data/users_files/{folder}')
+        try:
+            check_folder(club, folder)
+            Y.upload(f'data/users_files/{folder}/{file_name}', f'{club}/{folder}/{file_name}')
+        except Exception:
+            print('Ошибка')
+
+    shutil.rmtree(f'data/users_files/{folder}')
 
 
 def check_folder(club, folder):
