@@ -52,7 +52,6 @@ your_club = None
 CLUB = get_clubs()
 
 
-
 def start_markup():
     markup = types.InlineKeyboardMarkup(row_width=True)
     link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
@@ -112,8 +111,8 @@ def admin(message):
     #btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
     #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
     #markup.row(btn1, btn2)
-    #btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
-    #markup.row(btn3)
+    btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
+    markup.row(btn3)
     btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
     markup.row(btn4)
     #btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
