@@ -247,7 +247,16 @@ def callback_message(callback):
                          reply_markup=markup)
             ret(callback)
         elif callback.data == 'qw_5':
-            bot.send_message(callback.message.chat.id, 'ответ 5')
+            bot.send_message(callback.message.chat.id,
+                             'Мы советуем поискать резину в потеряшках ФОКа «Ясногорский», '
+                             'где проходили соревнования. Вас пустят и покажут. '
+                             'Осталось много всего, возможно и Ваша найдётся...')
+            markup = types.InlineKeyboardMarkup()
+            markup.add(
+                types.InlineKeyboardButton('Написать', url='https://vk.com/im?media=&sel=-211067501'))
+            bot.reply_to(callback.message,
+                         'Если Вы находитесь в другом городе или остались вопросы, обратитесь в сообщество!',
+                         reply_markup=markup)
             ret(callback)
         elif callback.data == 'qw_6':
             bot.send_message(callback.message.chat.id,
@@ -428,7 +437,7 @@ def questions(message):
     markup2.add(types.InlineKeyboardButton('Где найти рейтинг Юниады?', callback_data='qw_2')) #https://uniade.world/profile
     markup2.add(types.InlineKeyboardButton('Как посмотреть оценки?', callback_data='qw_3')) #нужно набрать 100 реакций https://t.me/rg_child_league/491
     markup2.add(types.InlineKeyboardButton('Как заказать фотографии?', callback_data='qw_4'))
-    markup2.add(types.InlineKeyboardButton('Как найти визажиста на турнире?', callback_data='qw_5'))
+    markup2.add(types.InlineKeyboardButton('Как найти потерянные вещи на турнире?', callback_data='qw_5'))
     markup2.add(types.InlineKeyboardButton('Зачем нужен гонг?', callback_data='qw_6'))
     markup2.add(types.InlineKeyboardButton('Какой поток выступает?', callback_data='qw_7'))
     markup2.add(types.InlineKeyboardButton('Как посмотреть трансляцию?', callback_data='qw_8'))
