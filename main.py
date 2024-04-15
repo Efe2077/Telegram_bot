@@ -13,7 +13,7 @@ from for_yandex_disk import download_file_to_club
 
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
 # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - мой
-bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
+bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
 
 
 GREETINGS = ['Привет', 'Приветствую вас',
@@ -52,72 +52,72 @@ your_club = None
 CLUB = get_clubs()
 
 
-# def start_markup():
-#     markup = types.InlineKeyboardMarkup(row_width=True)
-#     link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
-#     link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/rg_child_league")
-#     check_keyboard = types.InlineKeyboardButton(text="Проверить", callback_data="check")
-#     markup.add(link_keyboard1, link_keyboard2, check_keyboard)
-#
-#     return markup
 
+def start_markup():
+    markup = types.InlineKeyboardMarkup(row_width=True)
+    link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
+    link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/rg_child_league")
+    check_keyboard = types.InlineKeyboardButton(text="Проверить", callback_data="check")
+    markup.add(link_keyboard1, link_keyboard2, check_keyboard)
 
-
-# def start(message):
-#     global ADMIN_STATUS, USER_NAME
-#     bot.send_message(message.chat.id, choice(GREETINGS))
-#     name = message.from_user.first_name
-#
-#     if name == 'Uniade bot':
-#         name = message.chat.first_name
-#         USER_NAME = message.chat.username
-#
-#     bot.send_message(message.chat.id, name)
-#
-#     if check(message, message.chat.id) and check_channels_start(message):
-#         admin(message)
-#
-#
-# def check(message, chat_id):
-#     st = bot.get_chat_member(chat_id, user_id=message.chat.id).status
-#     return st in ["creator", "administrator", "member"]
-#
-#
-# def check_channels_start(message):
-#     markup = types.InlineKeyboardMarkup(row_width=True)
-#     if check(message, "-1001649523664") and check(message, '-1001729713697'):
-#         bot.send_message(message.chat.id, "Спасибо за подписку ✨")
-#         markup.add(admin(message))
-#     else:
-#         bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
-#
-#
-# def check_channels(message):
-#     if check(message, "-1001649523664") and check(message, '-1001729713697'):
-#         return True
-#     else:
-#         bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+    return markup
 
 
 @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
+def start(message):
+    global ADMIN_STATUS, USER_NAME
+    bot.send_message(message.chat.id, choice(GREETINGS))
+    name = message.from_user.first_name
+
+    if name == 'Uniade bot':
+        name = message.chat.first_name
+        USER_NAME = message.chat.username
+
+    bot.send_message(message.chat.id, name)
+
+    if check(message, message.chat.id) and check_channels_start(message):
+        admin(message)
+
+
+def check(message, chat_id):
+    st = bot.get_chat_member(chat_id, user_id=message.chat.id).status
+    return st in ["creator", "administrator", "member"]
+
+
+def check_channels_start(message):
+    markup = types.InlineKeyboardMarkup(row_width=True)
+    if check(message, "-1001649523664") and check(message, '-1001729713697'):
+        bot.send_message(message.chat.id, "Спасибо за подписку ✨")
+        markup.add(admin(message))
+    else:
+        bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+
+
+def check_channels(message):
+    if check(message, "-1001649523664") and check(message, '-1001729713697'):
+        return True
+    else:
+        bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+
+
 def admin(message):
     a = bot.send_message(message.chat.id, 'delete', reply_markup=ReplyKeyboardRemove())
     bot.delete_message(message.chat.id, a.message_id)
     global ADMIN_STATUS
     name, id = message.from_user.username, message.chat.id
-    if name == 'Uniade_bot' or name == 'Program_by_DED_bot':
+    if name == 'Uniade_bot':
         name = message.chat.username
     ADMIN_STATUS = add_user(name, id)
     markup = types.InlineKeyboardMarkup()
-    btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
-    btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
-    markup.row(btn1, btn2)
-    btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
-    markup.row(btn3)
+    #btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
+    #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
+    #markup.row(btn1, btn2)
+    #btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
+    #markup.row(btn3)
     btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
     markup.row(btn4)
-    btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
-    markup.row(btn5)
+    #btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
+    #markup.row(btn5)
     btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='contact_the_organizers')
     markup.row(btn6)
     btn7 = types.InlineKeyboardButton('FAQ ⁉️', callback_data='F_A_Q')
@@ -148,9 +148,8 @@ def bye(message):
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_message(callback):
-    # if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
-    if True:
-        global command, USER_NAME, new_text
+    if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
+        global command, USER_NAME
         USER_NAME = callback.message.chat.username
         if callback.data == 'add_new_admin':
             bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
@@ -172,14 +171,14 @@ def callback_message(callback):
         elif callback.data == 'buy_drink':
             bot.send_message(callback.message.chat.id, "Сделайте заказ")
             command = 'drink'
-            bot.register_next_step_handler(callback.message, buy_drink)
-        # elif callback.data == 'check':
-        #     start(callback.message)
+            bot.register_next_step_handler(callback.message, inp_question)
+        elif callback.data == 'check':
+            start(callback.message)
         elif callback.data == 'F_A_Q':
             questions(callback.message)
         elif callback.data == 'grade':
-            bot.send_message(callback.message.chat.id, "Напишите место")
-            bot.register_next_step_handler(callback.message, location)
+            bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:")
+            bot.register_next_step_handler(callback.message, grade)
         elif callback.data == 'contact_the_organizers':
             bot.send_message(callback.message.chat.id, "Напишите вопрос")
             command = 'send_questions'
@@ -424,6 +423,13 @@ def inp_question(message):
     yes_or_no(message)
 
 
+def inp_order(message):
+    global new_order
+    new_order = message.text
+    bot.send_message(message.chat.id, f'Такой вопрос: {new_text}')
+    yes_or_no(message)
+
+
 def ask(message):
     global quest
     text = new_text
@@ -452,6 +458,22 @@ def show_club(message):
         markup.add(btn)
 
     bot.send_message(message.chat.id, 'Выберите папку:', reply_markup=markup)
+
+
+def grade(message):
+    try:
+        b = message.text
+        a = message.text.split(' ')
+        name, last_name = a[1], a[0]
+
+        site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getScore&lastname={last_name}&name={name}"
+
+        response = requests.get(site).json()
+
+        bot.send_message(message.chat.id, response[0]['sum_score'])
+        admin(message)
+    except Exception:
+        print(f"Неправильный ввод: {b}")
 
 
 def show_questions_from_users(message):
