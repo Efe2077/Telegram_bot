@@ -4,7 +4,6 @@ import telebot
 import requests
 import xlsxwriter
 from telebot import types
-import sqlite3
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
@@ -21,8 +20,8 @@ GREETINGS = ['Привет', 'Приветствую вас',
              ]
 
 GOODBYES = ['До свидания', 'Всего хорошего',
-             'Всего доброго', 'До встречи',
-             'Прощайте', 'Бывай', 'Пока',
+            'Всего доброго', 'До встречи',
+            'Прощайте', 'Бывай', 'Пока',
             ]
 
 command = None
@@ -84,42 +83,8 @@ def check_channels(message):
 def admin(message):
     a = bot.send_message(message.chat.id, 'delete', reply_markup=ReplyKeyboardRemove())
     bot.delete_message(message.chat.id, a.message_id)
-    global ADMIN_STATUS
-    name, id = message.from_user.username, message.chat.id
-    if name == 'Uniade_bot':
-        name = message.chat.username
-    ADMIN_STATUS = add_user(name, id)
-    markup = types.InlineKeyboardMarkup()
-    #btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
-    #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
-    #markup.row(btn1, btn2)
-    #btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
-    #markup.row(btn3)
-    btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
-    markup.row(btn4)
-    #btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
-    #markup.row(btn5)
-    btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='contact_the_organizers')
-    markup.row(btn6)
-    btn7 = types.InlineKeyboardButton('ЧаВо⁉️', callback_data='F_A_Q')
-    btn8 = types.InlineKeyboardButton('О нас', callback_data='our_social_networks')
-    markup.row(btn7, btn8)
-    btn9 = types.InlineKeyboardButton('Видео-live', callback_data='video_live')
-    btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
-    markup.row(btn9, btn10)
-    if ADMIN_STATUS:
-        btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
-        markup.row(btn_for_admin1)
-        btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
-        markup.row(btn_for_admin2)
-        btn_for_admin3 = types.InlineKeyboardButton('Вопросы от пользователей', callback_data='show_questions_from_users')
-        markup.row(btn_for_admin3)
-        # Временная кнопка
-        btn_for_admin3 = types.InlineKeyboardButton('Количество пользователей', callback_data='show_count_of_users')
-        markup.row(btn_for_admin3)
-        # Временная кнопка
-        btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
-        markup.row(btn_for_admin4)
+
+    markup = make_main_markup(message)
 
     bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
 
@@ -147,7 +112,6 @@ def callback_message(callback):
         elif callback.data == 'our_social_networks':
             text = open('data/social_networks.txt', 'r', encoding='utf-8').read()
             bot.send_message(callback.message.chat.id, text)
-            admin(callback.message)
         elif callback.data == 'music':
             bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
             admin(callback.message)
@@ -158,7 +122,10 @@ def callback_message(callback):
         elif callback.data == 'check':
             start(callback.message)
         elif callback.data == 'F_A_Q':
-            questions(callback.message)
+            bot.edit_message_text(f'Вопросы:',
+                                  reply_markup=questions(),
+                                  chat_id=callback.message.chat.id,
+                                  message_id=callback.message.message_id)
         elif callback.data == 'grade':
             bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:")
             bot.register_next_step_handler(callback.message, grade)
@@ -192,7 +159,6 @@ def callback_message(callback):
             bot.reply_to(callback.message,
                          'Скорее смотреть!!!',
                          reply_markup=markup)
-            admin(callback.message)
         elif callback.data == 'video_live':
             markup = types.InlineKeyboardMarkup()
             markup.add(
@@ -200,33 +166,32 @@ def callback_message(callback):
             bot.reply_to(callback.message,
                          'Скорее смотреть!!!',
                          reply_markup=markup)
-            admin(callback.message)
         elif callback.data == 'qw_1':
-            file = open('data/checkroom0.jpg', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/checkroom0.jpg', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             bot.send_message(callback.message.chat.id,
                              'Войдя через главный вход, проходите через турникет и заворачиваете направо')
-            file = open('data/checkroom1.jpg', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/checkroom1.jpg', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             bot.send_message(callback.message.chat.id, 'проходите по коридору вперед')
-            file = open('data/checkroom2.jpg', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/checkroom2.jpg', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             bot.send_message(callback.message.chat.id, 'поворачиваете налево и входите в раздевалку, вы на месте!')
-            ret(callback)
+            # ret(callback)
         elif callback.data == 'qw_2':
-            file = open('data/rating1.png', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/rating1.png', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             markup = types.InlineKeyboardMarkup()
             markup.add(
                 types.InlineKeyboardButton('Перейти в профиль/зарегистрироваться', url='https://uniade.world/profile'))
             bot.reply_to(callback.message,
                          'Зарегистрироваться на сайте (если еще этого не сделали), в профиле выбрать "достижения"',
                          reply_markup=markup)
-            file = open('data/rating2.png', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/rating2.png', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             bot.send_message(callback.message.chat.id,
                              'В разделе достижения будет указано значения рейтинга (твой рейтинг) и достижения')
-            ret(callback)
+            # ret(callback)
         elif callback.data == 'qw_3':
             markup = types.InlineKeyboardMarkup()
             markup.add(
@@ -234,25 +199,25 @@ def callback_message(callback):
             bot.reply_to(callback.message,
                          'Для начала нужно набрать 100 реакций XD',
                          reply_markup=markup)
-            ret(callback)
+            # ret(callback)
         elif callback.data == 'qw_4':
             bot.send_message(callback.message.chat.id, 'Фото будут доступны на сайте ниже с 16 апреля')
-            file = open('data/photo_qr.png', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/photo_qr.png', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             markup = types.InlineKeyboardMarkup()
             markup.add(
                 types.InlineKeyboardButton('Заказать', url='http://kondakov.online/order.html'))
             bot.reply_to(callback.message,
                          'Сайт с фотографиями',
                          reply_markup=markup)
-            ret(callback)
+            # ret(callback)
         elif callback.data == 'qw_5':
             bot.send_message(callback.message.chat.id, 'ответ 5')
-            ret(callback)
+            # ret(callback)
         elif callback.data == 'qw_6':
             bot.send_message(callback.message.chat.id,
                              'Чтобы судьи понимали тайминг упражнения, соответствующий правилам!')
-            ret(callback)
+            # ret(callback)
         elif callback.data == 'qw_7':
             markup = types.InlineKeyboardMarkup()
             markup.add(
@@ -262,7 +227,7 @@ def callback_message(callback):
                          'Подайте заявку на вступление в сообщество. '
                          'Когда она будет принята, Вы сможете узнать в репортаже',
                          reply_markup=markup)
-            ret(callback)
+            # ret(callback)
         elif callback.data == 'qw_8':
             markup = types.InlineKeyboardMarkup()
             markup.add(
@@ -272,30 +237,30 @@ def callback_message(callback):
                          'Подайте заявку на вступление в сообщество. '
                          'Когда она будет принята, Вы сможете увидеть долгожданные выступления',
                          reply_markup=markup)
-            ret(callback)
+            # ret(callback)
         elif callback.data == 'qw_9':
-            file = open('data/online1.png', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/online1.png', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             markup = types.InlineKeyboardMarkup()
             markup.add(
                 types.InlineKeyboardButton('Перейти в профиль/зарегистрироваться', url='https://uniade.world/profile'))
             bot.reply_to(callback.message,
                          'Зарегистрироваться на сайте (если еще этого не сделали), в профиле выбрать "подать заявку"',
                          reply_markup=markup)
-            file = open('data/online2.png', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/online2.png', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             bot.send_message(callback.message.chat.id,
                              'При оплате выбрать "онлайн"')
-            ret(callback)
+            # ret(callback)
         elif callback.data == 'qw_11':
             bot.send_message(callback.message.chat.id, 'Справа от входа в арку находится стол dj, '
                                                        'именно этому харизматичному мужчине нужно сдать флешку XD')
-            file = open('data/dj.jpg', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
-            ret(callback)
+            # file = open('data/dj.jpg', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
+            # ret(callback)
         elif callback.data == 'qw_10':
-            file = open('data/photo1.png', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/photo1.png', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             markup = types.InlineKeyboardMarkup()
             markup.add(
                 types.InlineKeyboardButton('Перейти в профиль/зарегистрироваться', url='https://uniade.world/profile'))
@@ -303,16 +268,19 @@ def callback_message(callback):
                          'Зарегистрироваться на сайте (если еще этого не сделали), '
                          'в профиле выбрать "загрузить фото для турнира"',
                          reply_markup=markup)
-            file = open('data/photo2.png', 'rb')
-            bot.send_photo(callback.message.chat.id, file)
+            # file = open('data/photo2.png', 'rb')
+            # bot.send_photo(callback.message.chat.id, file)
             bot.send_message(callback.message.chat.id,
                              'Далее нажмите "Загрузить фото"')
-            ret(callback)
+            # ret(callback)
         # elif callback.data == 'qw_12':
         #     bot.send_message(callback.message.chat.id, 'ответ 10')
         #     ret(callback)
         elif callback.data == 'qw_quit':
-            admin(callback.message)
+            bot.edit_message_text(f'Вы можете выполнить такие функции:',
+                                  reply_markup=make_main_markup(callback.message),
+                                  chat_id=callback.message.chat.id,
+                                  message_id=callback.message.message_id)
 
 
 @bot.message_handler(content_types=['text'])
@@ -350,9 +318,6 @@ def func(message):
     elif message.text == 'Назад':
         admin(message)
 
-    elif message.text == 'К вопросам':
-        questions(message)
-
 
 @bot.message_handler(content_types=['photo'])
 def get_photo(message):
@@ -382,7 +347,7 @@ def buy_drink(message):
 
 
 def ret(callback):
-    questions(message=callback.message)
+    questions()
 
 
 def count_of_users(message):
@@ -422,7 +387,7 @@ def map(message):
     admin(message)
 
 
-def questions(message):
+def questions():
     markup2 = types.InlineKeyboardMarkup()
     markup2.add(types.InlineKeyboardButton('Где раздевалка?', callback_data='qw_1')) #фото-ряд
     markup2.add(types.InlineKeyboardButton('Где найти рейтинг Юниады?', callback_data='qw_2')) #https://uniade.world/profile
@@ -438,7 +403,7 @@ def questions(message):
     #markup2.add(types.InlineKeyboardButton('Кто разработал бот?', callback_data='qw_12'))
     #markup2.add(types.InlineKeyboardButton('Как пройти в зал соревнований?', callback_data='qw_13'))
     markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
-    bot.send_message(message.chat.id, text='Вопросы', reply_markup=markup2)
+    return markup2
 
 
 def del_admin(message):
@@ -496,7 +461,9 @@ def grade(message):
         admin(message)
     except Exception:
         print(f"Неправильный ввод: {b}")
-        bot.send_message(message.chat.id, f"Неправильный ввод: {b}")
+        bot.send_message(message.chat.id, f"Неправильный ввод: {b} \nВозможно данный участник ёще не участвовал \n"
+                                          f"Можете обратиться к организаторам")
+
 
 def show_questions_from_users(message):
     global consult
@@ -558,6 +525,47 @@ def slim_shady(message, tour):
         f1.close()
 
     admin(message)
+
+
+def make_main_markup(message):
+    global ADMIN_STATUS
+    name, id = message.from_user.username, message.chat.id
+    if name == 'Uniade_bot':
+        name = message.chat.username
+    ADMIN_STATUS = add_user(name, id)
+    markup = types.InlineKeyboardMarkup()
+    #btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
+    #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
+    #markup.row(btn1, btn2)
+    #btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
+    #markup.row(btn3)
+    btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
+    markup.row(btn4)
+    #btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
+    #markup.row(btn5)
+    btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='contact_the_organizers')
+    markup.row(btn6)
+    btn7 = types.InlineKeyboardButton('ЧаВо⁉️', callback_data='F_A_Q')
+    btn8 = types.InlineKeyboardButton('О нас', callback_data='our_social_networks')
+    markup.row(btn7, btn8)
+    btn9 = types.InlineKeyboardButton('Видео-live', callback_data='video_live')
+    btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
+    markup.row(btn9, btn10)
+    if ADMIN_STATUS:
+        btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
+        markup.row(btn_for_admin1)
+        btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
+        markup.row(btn_for_admin2)
+        btn_for_admin3 = types.InlineKeyboardButton('Вопросы от пользователей', callback_data='show_questions_from_users')
+        markup.row(btn_for_admin3)
+        # Временная кнопка
+        btn_for_admin3 = types.InlineKeyboardButton('Количество пользователей', callback_data='show_count_of_users')
+        markup.row(btn_for_admin3)
+        # Временная кнопка
+        btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
+        markup.row(btn_for_admin4)
+
+    return markup
 
 
 if __name__ == '__main__':
