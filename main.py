@@ -93,9 +93,9 @@ def admin(message):
     #btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
     #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
     #markup.row(btn1, btn2)
-    #btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
-    #markup.row(btn3)
-    btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
+    btn3 = types.InlineKeyboardButton('Групповая оценка', callback_data='group_grade')
+    markup.row(btn3)
+    btn4 = types.InlineKeyboardButton('Индивид. оценка', callback_data='ind_grade')
     markup.row(btn4)
     #btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
     #markup.row(btn5)
@@ -159,9 +159,13 @@ def callback_message(callback):
             start(callback.message)
         elif callback.data == 'F_A_Q':
             questions(callback.message)
-        elif callback.data == 'grade':
+        elif callback.data == 'ind_grade':
             bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:")
-            bot.register_next_step_handler(callback.message, grade)
+            bot.register_next_step_handler(callback.message, ind_grade)
+        elif callback.data == 'group_grade':
+            bot.send_message(callback.message.chat.id, "Введите название команды или дуэта, "
+                                                       "оценку которого хочешь узнать:")
+            bot.register_next_step_handler(callback.message, group_grade)
         elif callback.data == 'contact_the_organizers':
             bot.send_message(callback.message.chat.id, "Напишите вопрос")
             command = 'send_questions'
@@ -229,10 +233,9 @@ def callback_message(callback):
             ret(callback)
         elif callback.data == 'qw_3':
             markup = types.InlineKeyboardMarkup()
-            markup.add(
-                types.InlineKeyboardButton('Помочь!', url='https://t.me/rg_child_league/491'))
             bot.reply_to(callback.message,
-                         'Для начала нужно набрать 100 реакций XD',
+                         'Просто используйте функцию "индивидуальная оценка" '
+                         'или "групповая" для просмотра соответсвующих результатов',
                          reply_markup=markup)
             ret(callback)
         elif callback.data == 'qw_4':
@@ -324,7 +327,7 @@ def callback_message(callback):
             admin(callback.message)
 
 
-@bot.message_handler(content_types=['text'])
+@bot.message_handler(content_types=['ind_text'])
 def func(message):
     global command
     if message.text == "✅ Да":
@@ -406,7 +409,7 @@ def count_of_users(message):
 def remove_html_tags(text):
     parser = etree.HTMLParser()
     tree = etree.fromstring(text, parser)
-    return etree.tostring(tree, encoding='unicode', method='text')
+    return etree.tostring(tree, encoding='unicode', method='ind_text')
 
 
 def map(message):
@@ -491,7 +494,8 @@ def answer(message):
     printed_work[1] = text
 
 
-def grade(message):
+def ind_grade(message):
+    global in_var_n, ind_text
     try:
         b = message.text
         a = message.text.split(' ')
@@ -500,12 +504,63 @@ def grade(message):
         site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getScore&lastname={last_name}&name={name}"
 
         response = requests.get(site).json()
-
-        bot.send_message(message.chat.id, response[0]['sum_score'])
+        sum_score = response[0]['sum_score']
+        ind_text = ''
+        ind_text += f'{last_name} {name} - оценки:\n\n'
+        in_var_n = 0
+        if response[0]['item'] == '0':
+            in_var_n = 1
+            score = response[0]['score']
+            ind_text += f'БП: {score}\n'
+        for i in range(in_var_n, len(response)):
+            score = response[i]['score']
+            if in_var_n == 1:
+                ind_text += f'{i} вид: {score}\n'
+            else:
+                ind_text += f'{i + 1} вид: {score}\n'
+        ind_text += f'\nСуммарная оценка: {sum_score}'
+        in_var_n = 0
+        bot.send_message(message.chat.id, ind_text)
+        ind_text = ''
+        print(f"Успешный ввод: {b}")
         admin(message)
     except Exception:
         print(f"Неправильный ввод: {b}")
         bot.send_message(message.chat.id, f"Неправильный ввод: {b}")
+
+
+def group_grade(message):
+    global g_var_n, group_text
+    try:
+        group_name = message.text
+
+        site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getScore&lastname={group_name}"
+
+        response = requests.get(site).json()
+
+        sum_score = response[0]['sum_score']
+        group_text = ''
+        group_text += f'{group_name} - оценки:\n\n'
+        g_var_n = 0
+        if response[0]['item'] == '0':
+            g_var_n = 1
+            score = response[0]['score']
+            group_text += f'БП: {score}\n'
+        for i in range(g_var_n, len(response)):
+            score = response[i]['score']
+            if g_var_n == 1:
+                group_text += f'{i} вид: {score}\n'
+            else:
+                group_text += f'{i + 1} вид: {score}\n'
+        group_text += f'\nСуммарная оценка: {sum_score}'
+        g_var_n = 0
+        bot.send_message(message.chat.id, group_text)
+        text = ''
+        print(f"Успешный ввод: {group_name}")
+        admin(message)
+    except Exception:
+        print(f"Неправильный ввод: {group_name}")
+        bot.send_message(message.chat.id, f"Неправильный ввод: {group_name}")
 
 def show_questions_from_users(message):
     global consult
