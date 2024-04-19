@@ -14,10 +14,9 @@ def download_file_to_club(club, folder, file_name):
         try:
             check_folder(club, folder)
             Y.upload(f'data/users_files/{folder}/{file_name}', f'{club}/{folder}/{file_name}')
+            return True
         except Exception:
-            print('Ошибка')
-
-    shutil.rmtree(f'data/users_files/{folder}')
+            return False
 
 
 def check_folder(club, folder):
