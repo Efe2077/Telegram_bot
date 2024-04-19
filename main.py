@@ -50,6 +50,7 @@ fio = None
 printed_work = [None, None]
 consult = show_questions()
 your_club = None
+glob_call = None
 CLUB = get_clubs()
 
 
@@ -119,9 +120,10 @@ def bye(message):
 def callback_message(callback):
     # if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
     if True:
-        global command, USER_NAME
+        global command, USER_NAME, glob_call
+        print(f'from callback: {command}')
         USER_NAME = callback.message.chat.username
-        print(command)
+        glob_call = callback
         if callback.data == 'add_new_admin':
             bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
@@ -167,6 +169,7 @@ def callback_message(callback):
         elif callback.data in CLUB:
             if command == 'get_table':
                 slim_shady(callback.message, callback.data)
+                command = 'table'
             elif command == 'send_file_to_folder':
                 global your_club
                 your_club = callback.data
@@ -183,7 +186,7 @@ def callback_message(callback):
 
         elif callback.data == 'show_count_of_users':
             count_of_users(callback.message)
-        elif callback.data == 'table':
+        elif callback.data == 'table' or command == 'table':
             table(callback.message)
             command = 'get_table'
 
@@ -312,12 +315,12 @@ def func(message):
         if command == 'add_admin':
             mess = add_admin(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
-            admin(message)
+            yet_or_exit(message)
 
         elif command == 'delete_admin':
             mess = delete_your_admins(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
-            admin(message)
+            yet_or_exit(message)
 
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -329,6 +332,9 @@ def func(message):
     elif message.text == 'Написать еще раз':
         bot.send_message(message.chat.id, "Повторите")
         bot.register_next_step_handler(message, inp_name)
+
+    elif message.text == 'Ещё раз':
+        callback_message(glob_call)
 
     elif message.text == 'Назад':
         admin(message)
@@ -343,6 +349,7 @@ def get_photo(message):
 
 @bot.message_handler(content_types=['audio'])
 def send_audio_into_folder(message):
+    global command
     if command == 'sending_file':
         file_info = bot.get_file(message.audio.file_id)
         downloaded_file = bot.download_file(file_info.file_path)
@@ -355,17 +362,19 @@ def send_audio_into_folder(message):
 
         with open(src, 'wb') as new_file:
             new_file.write(downloaded_file)
-
-            print(your_club, fio, name)
-            if download_file_to_club(your_club, fio, name) is False:
-                bot.send_message(message.chat.id, 'Файл с таким названием уже существует\n'
-                                                  'Поменяйте название файла и прикрепите его повторно')
-            else:
-                bot.send_message(message.chat.id, 'Файл успешно прикреплен')
-
             new_file.close()
 
+        print(your_club, fio, name)
+
+        resp = download_file_to_club(your_club, fio, name)
         shutil.rmtree(f'data/users_files/{fio}')
+        if resp is False:
+            bot.send_message(message.chat.id, 'Файл с таким названием уже существует\n'
+                                              'Поменяйте название файла и прикрепите его повторно')
+        else:
+            bot.send_message(message.chat.id, 'Файл успешно прикреплен')
+            command = 'send_file_to_folder'
+            yet_or_exit(message)
 
 
 def inp_folder(message):
@@ -394,7 +403,7 @@ def yes_or_no(message):
 
 def buy_drink(message):
     bot.send_message(message.chat.id, f'Ваш напиток - {message.text}')
-    admin(message)
+    yet_or_exit(message)
 
 
 def count_of_users(message):
@@ -403,7 +412,7 @@ def count_of_users(message):
     response = requests.get(site)
 
     bot.send_message(message.chat.id, remove_html_tags(response.content.decode()))
-    admin(message)
+    yet_or_exit(message)
 
 
 def remove_html_tags(text):
@@ -431,7 +440,7 @@ def location(message):
 
     file = open('data/map.jpg', 'rb')
     bot.send_photo(message.chat.id, file)
-    admin(message)
+    yet_or_exit(message)
 
 
 def questions():
@@ -464,7 +473,7 @@ def inp_question(message):
     new_text = message.text
     ask(message)
     send_questions(message.chat.id, quest)
-    admin(message)
+    yet_or_exit(message)
 
 
 def ask(message):
@@ -480,7 +489,6 @@ def answer(message):
     bot.send_message(message.chat.id, f'Ваш ответ: {text}')
     printed_work[1] = text
     send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
-    admin(message)
 
 
 def show_club():
@@ -506,7 +514,7 @@ def grade(message):
         response = requests.get(site).json()
 
         bot.send_message(message.chat.id, response[0]['sum_score'])
-        admin(message)
+        yet_or_exit(message)
     except Exception:
         print(f"Неправильный ввод: {b}")
         bot.send_message(message.chat.id, f"Неправильный ввод: {b} \nВозможно данный участник ёще не участвовал \n"
@@ -562,7 +570,7 @@ def slim_shady(message, tour):
         bot.send_document(message.chat.id, f1)
         f1.close()
 
-    admin(message)
+    yet_or_exit(message)
 
 
 def make_main_markup(message):
@@ -604,6 +612,14 @@ def make_main_markup(message):
         markup.row(btn_for_admin4)
 
     return markup
+
+
+def yet_or_exit(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
+    btn1 = types.KeyboardButton('Ещё раз')
+    btn2 = types.KeyboardButton('Назад')
+    markup.add(btn1, btn2)
+    bot.send_message(message.chat.id, 'Выберите', reply_markup=markup)
 
 
 if __name__ == '__main__':
