@@ -121,7 +121,6 @@ def callback_message(callback):
     # if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
     if True:
         global command, USER_NAME, glob_call
-        print(f'from callback: {command}')
         USER_NAME = callback.message.chat.username
         glob_call = callback
         if callback.data == 'add_new_admin':
@@ -169,7 +168,7 @@ def callback_message(callback):
         elif callback.data in CLUB:
             if command == 'get_table':
                 slim_shady(callback.message, callback.data)
-                command = 'table'
+                callback.data = 'table'
             elif command == 'send_file_to_folder':
                 global your_club
                 your_club = callback.data
@@ -186,7 +185,7 @@ def callback_message(callback):
 
         elif callback.data == 'show_count_of_users':
             count_of_users(callback.message)
-        elif callback.data == 'table' or command == 'table':
+        elif callback.data == 'table':
             table(callback.message)
             command = 'get_table'
 
@@ -310,7 +309,6 @@ def callback_message(callback):
 @bot.message_handler(content_types=['text'])
 def func(message):
     global command
-    print(command)
     if message.text == "✅ Да":
         if command == 'add_admin':
             mess = add_admin(USER_NAME, new_text)
