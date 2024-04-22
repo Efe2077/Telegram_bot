@@ -1,14 +1,13 @@
 import sqlite3
 
 
-def add_user(user_name, user_id):
+def add_user(user_name, user_name2, user_id):
     con = sqlite3.connect('Users.db')
     cur = con.cursor()
-    result = cur.execute(f"""SELECT name, id FROM Users WHERE Id = ?""", (user_id, )).fetchall()
-    if result:
-        print(result)
-    else:
-        cur.execute(f"""INSERT INTO Users(Name, Id, Questions) VALUES('{user_name}', {user_id}, 'No_questions')""").fetchall()
+    result = cur.execute(f"""SELECT Name, Id FROM Users WHERE Id = '{user_id}' """).fetchall()
+    if not result:
+        cur.execute(f"""INSERT INTO Users(Name, Id, Questions, User_name, Command) VALUES('{user_name}', 
+                        {user_id}, null, '{user_name2}', null)""").fetchall()
         print(f"""
         Новый пользователь зарегистрирован:
             {user_name}
@@ -18,10 +17,11 @@ def add_user(user_name, user_id):
     con.commit()
     con.close()
 
+
+def check_admin_status(user_name):
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
-    result = cur.execute(f"""SELECT Name FROM Admins WHERE Name = ?""",
-                         (user_name, )).fetchall()
+    result = cur.execute(f"""SELECT Name FROM Admins WHERE Name = '{user_name}' """).fetchall()
 
     con.commit()
     con.close()
@@ -73,8 +73,6 @@ def delete_your_admins(your_name, name):
 
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
-
-    note = ''
 
     result = cur.execute(f"""SELECT Added_admin from Admins WHERE Name = ?""", (your_name, )).fetchall()
 

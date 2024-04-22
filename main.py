@@ -9,8 +9,9 @@ from telebot import types
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
-from add_new import add_user, add_admin, delete_your_admins
+from add_new import check_admin_status, add_admin, delete_your_admins, add_user
 from for_yandex_disk import download_file_to_club
+from for_db_tasks import insert_into_db_data, get_data_from_column
 
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
 # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - мой
@@ -41,16 +42,12 @@ def get_clubs():
     return list(p)
 
 
-command = None
-ADMIN_STATUS = None
-new_text = None
-USER_NAME = None
-quest = None
+name_of_smb = None
 fio = None
 printed_work = [None, None]
-consult = show_questions()
 your_club = None
-glob_call = None
+yet = None  # копия callback
+consult = show_questions()
 CLUB = get_clubs()
 
 
@@ -66,13 +63,11 @@ CLUB = get_clubs()
 
 @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
 def start(message):
-    global ADMIN_STATUS, USER_NAME
     bot.send_message(message.chat.id, choice(GREETINGS))
     name = message.from_user.first_name
 
     if name == 'Uniade bot' or name == 'Program_by_DED_bot':
         name = message.chat.first_name
-        USER_NAME = message.chat.username
 
     bot.send_message(message.chat.id, name)
 
@@ -118,34 +113,37 @@ def bye(message):
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_message(callback):
+
     # if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
     if True:
-        global command, USER_NAME, glob_call
-        USER_NAME = callback.message.chat.username
-        glob_call = callback
+        global yet
+        yet = callback
+        id_of_user = callback.message.chat.id
+        print(f"{get_data_from_column('Command', id_of_user)} - command by "
+              f"{get_data_from_column('User_name', id_of_user)}")
         if callback.data == 'add_new_admin':
             bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
             file = open('data/telegram_username.jpg', 'rb')
             bot.send_photo(callback.message.chat.id, file)
-            command = 'add_admin'
+            insert_into_db_data('add_admin', 'Command', id_of_user)
             bot.register_next_step_handler(callback.message, inp_name)
         elif callback.data == 'delete_admin':
-            command = 'delete_admin'
+            insert_into_db_data('delete_admin', 'Command', id_of_user)
             del_admin(callback.message)
         elif callback.data == 'our_social_networks':
             text = open('data/social_networks.txt', 'r', encoding='utf-8').read()
             bot.send_message(callback.message.chat.id, text)
         elif callback.data == 'music':
-            command = 'send_file_to_folder'
+            insert_into_db_data('send_file_to_folder', 'Command', id_of_user)
             bot.edit_message_text(f'Выберете папку:',
                                   reply_markup=show_club(),
                                   chat_id=callback.message.chat.id,
                                   message_id=callback.message.message_id)
         elif callback.data == 'buy_drink':
             bot.send_message(callback.message.chat.id, "Сделайте заказ")
-            command = 'drink'
-            bot.register_next_step_handler(callback.message, inp_question)
+            insert_into_db_data('drink', 'Command', id_of_user)
+            bot.register_next_step_handler(callback.message, buy_drink)
         # elif callback.data == 'check':
         #     start(callback.message)
         elif callback.data == 'F_A_Q':
@@ -166,10 +164,10 @@ def callback_message(callback):
             # admin(callback.message)
 
         elif callback.data in CLUB:
-            if command == 'get_table':
+            if get_data_from_column('Command', id_of_user) == 'get_table':
                 slim_shady(callback.message, callback.data)
                 callback.data = 'table'
-            elif command == 'send_file_to_folder':
+            elif get_data_from_column('Command', id_of_user) == 'send_file_to_folder':
                 global your_club
                 your_club = callback.data
                 bot.send_message(callback.message.chat.id, 'Напишите ФИО')
@@ -178,7 +176,7 @@ def callback_message(callback):
         elif callback.data.isdigit():
             if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
                 global printed_work
-                command = 'answer_to_question'
+                insert_into_db_data('answer_to_question', 'Command', id_of_user)
                 bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
                 printed_work[0] = consult[int(callback.data) - 1][1]
                 bot.register_next_step_handler(callback.message, answer)
@@ -187,7 +185,7 @@ def callback_message(callback):
             count_of_users(callback.message)
         elif callback.data == 'table':
             table(callback.message)
-            command = 'get_table'
+            insert_into_db_data('get_table', 'Command', id_of_user)
 
         elif callback.data == 'qw_1':
             # file = open('data/checkroom0.jpg', 'rb')
@@ -308,15 +306,15 @@ def callback_message(callback):
 
 @bot.message_handler(content_types=['text'])
 def func(message):
-    global command
     if message.text == "✅ Да":
-        if command == 'add_admin':
-            mess = add_admin(USER_NAME, new_text)
+        user_name = get_data_from_column('User_name', message.chat.id)
+        if get_data_from_column('Command', message.chat.id) == 'add_admin':
+            mess = add_admin(user_name, name_of_smb)
             bot.send_message(message.chat.id, mess)
             yet_or_exit(message)
 
-        elif command == 'delete_admin':
-            mess = delete_your_admins(USER_NAME, new_text)
+        elif get_data_from_column('Command', message.chat.id) == 'delete_admin':
+            mess = delete_your_admins(user_name, name_of_smb)
             bot.send_message(message.chat.id, mess)
             yet_or_exit(message)
 
@@ -332,7 +330,7 @@ def func(message):
         bot.register_next_step_handler(message, inp_name)
 
     elif message.text == 'Ещё раз':
-        callback_message(glob_call)
+        callback_message(yet)
 
     elif message.text == 'Назад':
         admin(message)
@@ -347,8 +345,7 @@ def get_photo(message):
 
 @bot.message_handler(content_types=['audio'])
 def send_audio_into_folder(message):
-    global command
-    if command == 'sending_file':
+    if get_data_from_column('Command', message.chat.id) == 'sending_file':
         file_info = bot.get_file(message.audio.file_id)
         downloaded_file = bot.download_file(file_info.file_path)
         if fio not in os.listdir('data/users_files'):
@@ -371,23 +368,22 @@ def send_audio_into_folder(message):
                                               'Поменяйте название файла и прикрепите его повторно')
         else:
             bot.send_message(message.chat.id, 'Файл успешно прикреплен')
-            command = 'send_file_to_folder'
+            insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
             yet_or_exit(message)
 
 
 def inp_folder(message):
-    global new_text, command, fio
-    new_text = message.text
-    bot.send_message(message.chat.id, f'Ваша папка: \n{new_text}')
-    fio = new_text
-    command = 'sending_file'
+    global fio
+    fio = message.text
+    bot.send_message(message.chat.id, f'Ваша папка: \n{fio}')
+    insert_into_db_data('sending_file', 'Command', message.chat.id)
     bot.send_message(message.chat.id, f'Прикрепите файл с музыкой (.mp3)')
 
 
 def inp_name(message):
-    global new_text
-    new_text = message.text
-    bot.send_message(message.chat.id, f'Такое имя: {new_text}?')
+    global name_of_smb
+    name_of_smb = message.text
+    bot.send_message(message.chat.id, f'Такое имя: {name_of_smb}?')
     yes_or_no(message)
 
 
@@ -467,18 +463,10 @@ def del_admin(message):
 
 
 def inp_question(message):
-    global new_text
-    new_text = message.text
-    ask(message)
-    send_questions(message.chat.id, quest)
+    question_from_user = message.text
+    bot.send_message(message.chat.id, f"Ваш вопрос:\n{question_from_user}")
+    send_questions(message.chat.id, question_from_user)
     yet_or_exit(message)
-
-
-def ask(message):
-    global quest
-    text = new_text
-    bot.send_message(message.chat.id, f"Ваш вопрос:\n{text}")
-    quest = text
 
 
 def answer(message):
@@ -572,15 +560,15 @@ def slim_shady(message, tour):
 
 
 def make_main_markup(message):
-    global ADMIN_STATUS
-    name, id = message.from_user.username, message.chat.id
-    if name == 'Uniade_bot' or name == 'Program_by_DED_bot':
-        name = message.chat.username
-    ADMIN_STATUS = add_user(name, id)
+    name, name2, id = message.chat.username, message.chat.first_name, message.chat.id
+
+    admin_status = check_admin_status(name)
+    add_user(name, name2, id)  # Добавление нового пользователя
+
     markup = types.InlineKeyboardMarkup()
-    #btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
+    btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
     #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
-    #markup.row(btn1, btn2)
+    markup.row(btn1)
     btn3 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
     markup.row(btn3)
     btn4 = types.InlineKeyboardButton('Музыка', callback_data='music')
@@ -595,7 +583,7 @@ def make_main_markup(message):
     btn9 = types.InlineKeyboardButton('Видео-live', callback_data='video_live')
     btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
     markup.row(btn9, btn10)
-    if ADMIN_STATUS:
+    if admin_status:
         btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
         markup.row(btn_for_admin1)
         btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
