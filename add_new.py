@@ -42,17 +42,18 @@ def add_admin(your_name, admin_name):
 
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
-    result = cur.execute(f"""SELECT Name from Admins WHERE Name = ?""", (admin_name, )).fetchall()
+    result = cur.execute(f"""SELECT Name from Admins WHERE Name = '{admin_name}' """).fetchall()
 
     if result:
         note = 'Данный пользователь уже является админом'
         return note
     else:
-        result2 = cur.execute(f"""SELECT Added_admin from Admins WHERE Name = ?""", (your_name,)).fetchall()
-        yours_admins = result2[0][0]
-        if yours_admins == 'Not':
+        result2 = cur.execute(f"""SELECT Added_admin from Admins WHERE Name = '{your_name}' """).fetchall()
+
+        if not result2:
             answer = admin_name
         else:
+            yours_admins = result2[0][0]
             answer = yours_admins + ' ' + admin_name
         cur.execute(f"""INSERT INTO Admins(Name, Added_admin) VALUES('{admin_name}', 'Not')""").fetchall()
         cur.execute(f"""UPDATE Admins SET Added_admin = '{answer}'

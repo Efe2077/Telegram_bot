@@ -42,10 +42,6 @@ def get_clubs():
     return list(p)
 
 
-name_of_smb = None
-fio = None
-printed_work = [None, None]
-your_club = None
 yet = None  # копия callback
 consult = show_questions()
 CLUB = get_clubs()
@@ -168,17 +164,15 @@ def callback_message(callback):
                 slim_shady(callback.message, callback.data)
                 callback.data = 'table'
             elif get_data_from_column('Command', id_of_user) == 'send_file_to_folder':
-                global your_club
-                your_club = callback.data
+                insert_into_db_data(callback.data, 'Your_club', id_of_user)
                 bot.send_message(callback.message.chat.id, 'Напишите ФИО')
                 bot.register_next_step_handler(callback.message, inp_folder)
 
         elif callback.data.isdigit():
             if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
-                global printed_work
                 insert_into_db_data('answer_to_question', 'Command', id_of_user)
                 bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
-                printed_work[0] = consult[int(callback.data) - 1][1]
+                insert_into_db_data(consult[int(callback.data) - 1][1], 'Printed_work', id_of_user)
                 bot.register_next_step_handler(callback.message, answer)
 
         elif callback.data == 'show_count_of_users':
@@ -307,7 +301,8 @@ def callback_message(callback):
 @bot.message_handler(content_types=['text'])
 def func(message):
     if message.text == "✅ Да":
-        user_name = get_data_from_column('User_name', message.chat.id)
+        user_name = get_data_from_column('Name', message.chat.id)
+        name_of_smb = get_data_from_column('Name_of_smb', message.chat.id)
         if get_data_from_column('Command', message.chat.id) == 'add_admin':
             mess = add_admin(user_name, name_of_smb)
             bot.send_message(message.chat.id, mess)
@@ -348,8 +343,11 @@ def send_audio_into_folder(message):
     if get_data_from_column('Command', message.chat.id) == 'sending_file':
         file_info = bot.get_file(message.audio.file_id)
         downloaded_file = bot.download_file(file_info.file_path)
-        if fio not in os.listdir('data/users_files'):
-            os.mkdir(f'data/users_files/{fio}')
+
+        fio = get_data_from_column('Fio', message.chat.id)
+        your_club = get_data_from_column('Your_club', message.chat.id)
+
+        os.mkdir(f'data/users_files/{fio}')
 
         name = message.audio.file_name
 
@@ -373,17 +371,17 @@ def send_audio_into_folder(message):
 
 
 def inp_folder(message):
-    global fio
-    fio = message.text
-    bot.send_message(message.chat.id, f'Ваша папка: \n{fio}')
+    text = message.text
+    insert_into_db_data(text, 'Fio', message.chat.id)
+    bot.send_message(message.chat.id, f'Ваша папка: \n{text}')
     insert_into_db_data('sending_file', 'Command', message.chat.id)
     bot.send_message(message.chat.id, f'Прикрепите файл с музыкой (.mp3)')
 
 
 def inp_name(message):
-    global name_of_smb
-    name_of_smb = message.text
-    bot.send_message(message.chat.id, f'Такое имя: {name_of_smb}?')
+    text = message.text
+    insert_into_db_data(text, 'Name_of_smb', message.chat.id)
+    bot.send_message(message.chat.id, f'Такое имя: {text}?')
     yes_or_no(message)
 
 
@@ -470,11 +468,11 @@ def inp_question(message):
 
 
 def answer(message):
-    global printed_work
     text = message.text
     bot.send_message(message.chat.id, f'Ваш ответ: {text}')
-    printed_work[1] = text
-    send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
+    printed_work = get_data_from_column('Printed_work', message.chat.id)
+    print(printed_work)
+    send_answer_from_admin(get_id_from_question(printed_work), text)
 
 
 def show_club():
@@ -517,8 +515,10 @@ def show_questions_from_users(message):
 
 
 def send_answer_from_admin(id_of_user, text):
+    printed_work = get_data_from_column('Questions', id_of_user)
+    delete_questions(printed_work)
     bot.send_message(id_of_user, f'Ответ от админа: {text}')
-    delete_questions(printed_work[0])
+
 
 
 def table(message):

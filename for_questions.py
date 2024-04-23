@@ -6,14 +6,12 @@ def send_questions(user_id, question):
     cur = con.cursor()
     result = cur.execute(f"""SELECT Questions FROM Users WHERE Id = '{user_id}' """).fetchall()
 
-    print(f'sending {question}')
-
     if question is not None:
         if result[0][0] is None:  # Если это первый вопрос
             cur.execute(f"""UPDATE Users SET Questions = '{question}' WHERE Id = '{user_id}' """)
 
         else:
-            if question not in result[0][0].split(): # Если это НЕ первый вопрос и он не повторяется
+            if question not in result[0][0].split():  # Если это НЕ первый вопрос и он не повторяется
                 question = f'{result[0][0]} {question}'
                 cur.execute(f"""UPDATE Users SET Questions = '{question}' WHERE Id = '{user_id}' """)
     else:
@@ -26,7 +24,8 @@ def send_questions(user_id, question):
 def delete_questions(text):
     con = sqlite3.connect('Users.db')
     cur = con.cursor()
-    cur.execute(f"""UPDATE Users SET Questions = null  WHERE Questions = '{text}'""").fetchall()
+    result = cur.execute(f"""SELECT Id FROM Users WHERE Questions = '{text}' """).fetchall()
+    cur.execute(f"""UPDATE Users SET Questions = null  WHERE Questions = '{text}' """).fetchall()
 
     con.commit()
     con.close()
@@ -55,8 +54,6 @@ def get_id_from_question(text):
 
         con.commit()
         con.close()
-
-        print(f'{result} - question')
 
         if result:
             return result[0][0]
