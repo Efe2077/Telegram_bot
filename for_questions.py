@@ -24,7 +24,6 @@ def send_questions(user_id, question):
 def delete_questions(text):
     con = sqlite3.connect('Users.db')
     cur = con.cursor()
-    result = cur.execute(f"""SELECT Id FROM Users WHERE Questions = '{text}' """).fetchall()
     cur.execute(f"""UPDATE Users SET Questions = null  WHERE Questions = '{text}' """).fetchall()
 
     con.commit()

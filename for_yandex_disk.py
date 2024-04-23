@@ -1,5 +1,5 @@
 import yadisk
-import shutil
+
 
 WHOLE_CLUBS = []
 

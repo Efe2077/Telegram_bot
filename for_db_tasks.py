@@ -8,8 +8,10 @@ def get_data_from_column(column, user_id):
 
     con.commit()
     con.close()
-
-    return result[0][0]
+    if result:
+        return result[0][0]
+    else:
+        return 'Ошибка'
 
 
 def insert_into_db_data(thing, column, user_id):

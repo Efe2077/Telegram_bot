@@ -324,8 +324,8 @@ def func(message):
         bot.send_message(message.chat.id, "Повторите")
         bot.register_next_step_handler(message, inp_name)
 
-    elif message.text == 'Ещё раз':
-        callback_message(yet)
+    # elif message.text == 'Ещё раз':
+    #     callback_message(yet)
 
     elif message.text == 'Назад':
         admin(message)
@@ -518,7 +518,6 @@ def send_answer_from_admin(id_of_user, text):
     printed_work = get_data_from_column('Questions', id_of_user)
     delete_questions(printed_work)
     bot.send_message(id_of_user, f'Ответ от админа: {text}')
-
 
 
 def table(message):
