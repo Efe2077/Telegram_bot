@@ -1,6 +1,8 @@
 from lxml import etree
 
+import sqlite3
 import telebot
+import asyncio
 import requests
 import xlsxwriter
 from telebot import types
@@ -31,6 +33,7 @@ USER_NAME = None
 quest = None
 printed_work = [None, None]
 consult = show_questions()
+admin_list = list()
 
 
 def start_markup():
@@ -300,6 +303,9 @@ def func(message):
             ask(message)
             send_questions(message.chat.id, quest)
             admin(message)
+            ladmins()
+            for i in admin_list:
+                bot.send_message(int(i), 'Новый вопрос от пользователя!!!')
         elif command == 'answer_to_question':
             answer(message)
             send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
@@ -431,6 +437,19 @@ def ask(message):
     text = new_text
     bot.send_message(message.chat.id, f"Ваш вопрос:\n{text}")
     quest = text
+
+
+def ladmins():
+    global admin_list
+
+    con = sqlite3.connect('Admins.db')
+    cur = con.cursor()
+    result0 = cur.execute(f"""SELECT Name FROM Admins""").fetchall()
+    con = sqlite3.connect('Users.db')
+    cur = con.cursor()
+    result1 = cur.execute(f"""SELECT ID FROM Users WHERE Name IN ('EfeFe4', 'di_petrin', 'Dinamit6663_1', 'Tester', 'bgalkin')""").fetchall()
+    result2 = [x[0] for x in result1]
+    admin_list = result2
 
 
 def inp_answer(message):
