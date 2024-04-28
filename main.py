@@ -482,6 +482,7 @@ def grade(message):
         print(f"Неправильный ввод: {b}")
         bot.send_message(message.chat.id, f"Неправильный ввод: {b} \nВозможно данный участник ёще не участвовал \n"
                                           f"Можете обратиться к организаторам")
+        admin(message)
 
 
 def show_questions_from_users(message):
