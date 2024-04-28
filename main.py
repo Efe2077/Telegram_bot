@@ -1,15 +1,17 @@
 from lxml import etree
 
-import sqlite3
 import telebot
-import asyncio
 import requests
 import xlsxwriter
+import os
+import shutil
 from telebot import types
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
-from add_new import add_user, add_admin, delete_your_admins
+from add_new import check_admin_status, add_admin, delete_your_admins, add_user
+from for_yandex_disk import download_file_to_club
+from for_db_tasks import insert_into_db_data, get_data_from_column
 
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
 # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - мой
@@ -26,14 +28,23 @@ GOODBYES = ['До свидания', 'Всего хорошего',
             'Прощайте', 'Бывай', 'Пока',
             ]
 
-command = None
-ADMIN_STATUS = None
-new_text = None
-USER_NAME = None
-quest = None
-printed_work = [None, None]
+
+def get_clubs():
+    gen, p = list(), set()
+
+    site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title=%"
+
+    response = requests.get(site).json()
+
+    for i in range(len(response)):
+        p.add(list(response[i].values())[11])
+
+    return list(p)
+
+
+yet = None  # копия callback
 consult = show_questions()
-admin_list = list()
+CLUB = get_clubs()
 
 
 def start_markup():
@@ -100,30 +111,36 @@ def bye(message):
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_message(callback):
     if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
-        global command, USER_NAME
-        USER_NAME = callback.message.chat.username
+        global yet
+        yet = callback
+        id_of_user = callback.message.chat.id
+        print(f"{get_data_from_column('Command', id_of_user)} - command by "
+              f"{get_data_from_column('User_name', id_of_user)}")
         if callback.data == 'add_new_admin':
             bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
 
             file = open('data/telegram_username.jpg', 'rb')
             bot.send_photo(callback.message.chat.id, file)
-            command = 'add_admin'
+            insert_into_db_data('add_admin', 'Command', id_of_user)
             bot.register_next_step_handler(callback.message, inp_name)
         elif callback.data == 'delete_admin':
-            command = 'delete_admin'
+            insert_into_db_data('delete_admin', 'Command', id_of_user)
             del_admin(callback.message)
         elif callback.data == 'our_social_networks':
             text = open('data/social_networks.txt', 'r', encoding='utf-8').read()
             bot.send_message(callback.message.chat.id, text)
         elif callback.data == 'music':
-            bot.send_message(callback.message.chat.id, 'https://music.yandex.ru/album/22747037/track/105213792')
-            admin(callback.message)
+            insert_into_db_data('send_file_to_folder', 'Command', id_of_user)
+            bot.edit_message_text(f'Выберете папку:',
+                                  reply_markup=show_club(),
+                                  chat_id=callback.message.chat.id,
+                                  message_id=callback.message.message_id)
         elif callback.data == 'buy_drink':
             bot.send_message(callback.message.chat.id, "Сделайте заказ")
-            command = 'drink'
-            bot.register_next_step_handler(callback.message, inp_question)
-        elif callback.data == 'check':
-            start(callback.message)
+            insert_into_db_data('drink', 'Command', id_of_user)
+            bot.register_next_step_handler(callback.message, buy_drink)
+        # elif callback.data == 'check':
+        #     start(callback.message)
         elif callback.data == 'F_A_Q':
             bot.edit_message_text(f'Вопросы:',
                                   reply_markup=questions(),
@@ -132,43 +149,37 @@ def callback_message(callback):
         elif callback.data == 'grade':
             bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:")
             bot.register_next_step_handler(callback.message, grade)
-        elif callback.data == 'contact_the_organizers':
-            bot.send_message(callback.message.chat.id, "Напишите вопрос")
-            command = 'send_questions'
-            bot.register_next_step_handler(callback.message, inp_question)
         elif callback.data == 'show_questions_from_users':
             show_questions_from_users(callback.message)
+        elif callback.data == 'send_questions':
+            bot.send_message(callback.message.chat.id, "Напишите вопрос")
+            bot.register_next_step_handler(callback.message, inp_question)
+            # ask(callback.message)
+            # send_questions(callback.message.chat.id, quest)
+            # admin(callback.message)
 
-        elif callback.data in ['Московская зима 2024', 'Спортивная Весна 2024', 'Зимняя Сказка 2023', 'Маленькая принцесса 2024']:
-            slim_shady(callback.message, callback.data)
+        elif callback.data in CLUB:
+            if get_data_from_column('Command', id_of_user) == 'get_table':
+                slim_shady(callback.message, callback.data)
+                callback.data = 'table'
+            elif get_data_from_column('Command', id_of_user) == 'send_file_to_folder':
+                insert_into_db_data(callback.data, 'Your_club', id_of_user)
+                bot.send_message(callback.message.chat.id, 'Напишите ФИО')
+                bot.register_next_step_handler(callback.message, inp_folder)
 
         elif callback.data.isdigit():
             if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
-                global printed_work
-                command = 'answer_to_question'
+                insert_into_db_data('answer_to_question', 'Command', id_of_user)
                 bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
-                printed_work[0] = consult[int(callback.data) - 1][1]
-                bot.register_next_step_handler(callback.message, inp_answer)
+                insert_into_db_data(consult[int(callback.data) - 1][1], 'Printed_work', id_of_user)
+                bot.register_next_step_handler(callback.message, answer)
 
-        # Временная кнопка
         elif callback.data == 'show_count_of_users':
             count_of_users(callback.message)
         elif callback.data == 'table':
             table(callback.message)
-        elif callback.data == 'text_live':
-            markup = types.InlineKeyboardMarkup()
-            markup.add(
-                types.InlineKeyboardButton('Трансляция', url='https://vk.com/textlive547685'))
-            bot.reply_to(callback.message,
-                         'Скорее смотреть!!!',
-                         reply_markup=markup)
-        elif callback.data == 'video_live':
-            markup = types.InlineKeyboardMarkup()
-            markup.add(
-                types.InlineKeyboardButton('Трансляция', url='https://vk.com/video-211067501_456239145'))
-            bot.reply_to(callback.message,
-                         'Скорее смотреть!!!',
-                         reply_markup=markup)
+            insert_into_db_data('get_table', 'Command', id_of_user)
+
         elif callback.data == 'qw_1':
             # file = open('data/checkroom0.jpg', 'rb')
             # bot.send_photo(callback.message.chat.id, file)
@@ -288,28 +299,19 @@ def callback_message(callback):
 
 @bot.message_handler(content_types=['text'])
 def func(message):
-    global command
     if message.text == "✅ Да":
-        if command == 'add_admin':
-            mess = add_admin(USER_NAME, new_text)
+        user_name = get_data_from_column('Name', message.chat.id)
+        name_of_smb = get_data_from_column('Name_of_smb', message.chat.id)
+        if get_data_from_column('Command', message.chat.id) == 'add_admin':
+            mess = add_admin(user_name, name_of_smb)
             bot.send_message(message.chat.id, mess)
-            admin(message)
+            yet_or_exit(message)
 
-        elif command == 'delete_admin':
-            mess = delete_your_admins(USER_NAME, new_text)
+        elif get_data_from_column('Command', message.chat.id) == 'delete_admin':
+            mess = delete_your_admins(user_name, name_of_smb)
             bot.send_message(message.chat.id, mess)
-            admin(message)
-        elif command == 'send_questions':
-            ask(message)
-            send_questions(message.chat.id, quest)
-            admin(message)
-            ladmins()
-            for i in admin_list:
-                bot.send_message(int(i), 'Новый вопрос от пользователя!!!')
-        elif command == 'answer_to_question':
-            answer(message)
-            send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
-            admin(message)
+            yet_or_exit(message)
+
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         btn1 = types.KeyboardButton('Написать еще раз')
@@ -320,6 +322,9 @@ def func(message):
     elif message.text == 'Написать еще раз':
         bot.send_message(message.chat.id, "Повторите")
         bot.register_next_step_handler(message, inp_name)
+
+    # elif message.text == 'Ещё раз':
+    #     callback_message(yet)
 
     elif message.text == 'Назад':
         admin(message)
@@ -332,10 +337,50 @@ def get_photo(message):
     bot.reply_to(message, 'Здорово! Не хотите ли Вы предложить это фото для поста в канале?', reply_markup=markup)
 
 
+@bot.message_handler(content_types=['audio'])
+def send_audio_into_folder(message):
+    if get_data_from_column('Command', message.chat.id) == 'sending_file':
+        file_info = bot.get_file(message.audio.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+
+        fio = get_data_from_column('Fio', message.chat.id)
+        your_club = get_data_from_column('Your_club', message.chat.id)
+
+        os.mkdir(f'data/users_files/{fio}')
+
+        name = message.audio.file_name
+
+        src = f'data/users_files/{fio}/' + name
+
+        with open(src, 'wb') as new_file:
+            new_file.write(downloaded_file)
+            new_file.close()
+
+        print(your_club, fio, name)
+
+        resp = download_file_to_club(your_club, fio, name)
+        shutil.rmtree(f'data/users_files/{fio}')
+        if resp is False:
+            bot.send_message(message.chat.id, 'Файл с таким названием уже существует\n'
+                                              'Поменяйте название файла и прикрепите его повторно')
+        else:
+            bot.send_message(message.chat.id, 'Файл успешно прикреплен')
+            insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
+            yet_or_exit(message)
+
+
+def inp_folder(message):
+    text = message.text
+    insert_into_db_data(text, 'Fio', message.chat.id)
+    bot.send_message(message.chat.id, f'Ваша папка: \n{text}')
+    insert_into_db_data('sending_file', 'Command', message.chat.id)
+    bot.send_message(message.chat.id, f'Прикрепите файл с музыкой (.mp3)')
+
+
 def inp_name(message):
-    global new_text, command
-    new_text = message.text
-    bot.send_message(message.chat.id, f'Такое имя: {new_text}?')
+    text = message.text
+    insert_into_db_data(text, 'Name_of_smb', message.chat.id)
+    bot.send_message(message.chat.id, f'Такое имя: {text}?')
     yes_or_no(message)
 
 
@@ -349,11 +394,7 @@ def yes_or_no(message):
 
 def buy_drink(message):
     bot.send_message(message.chat.id, f'Ваш напиток - {message.text}')
-    admin(message)
-
-
-def ret(callback):
-    questions()
+    yet_or_exit(message)
 
 
 def count_of_users(message):
@@ -362,7 +403,7 @@ def count_of_users(message):
     response = requests.get(site)
 
     bot.send_message(message.chat.id, remove_html_tags(response.content.decode()))
-    admin(message)
+    yet_or_exit(message)
 
 
 def remove_html_tags(text):
@@ -371,7 +412,7 @@ def remove_html_tags(text):
     return etree.tostring(tree, encoding='unicode', method='text')
 
 
-def map(message):
+def location(message):
     text = message.text
     bot.send_message(message.chat.id, f'Такое место: {text}?')
     API_KEY = '40d1649f-0493-4b70-98ba-98533de7710b'
@@ -381,16 +422,16 @@ def map(message):
 
     position = response.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['Point']['pos']
 
-    answer = f'll={",".join(position.split())}'
+    ans = f'll={",".join(position.split())}'
 
-    resp = requests.get(f"http://static-maps.yandex.ru/1.x/?{answer}&z=16&l=map")
+    resp = requests.get(f"http://static-maps.yandex.ru/1.x/?{ans}&z=16&l=map")
     map_file = "data/map.jpg"
     with open(map_file, "wb") as file:
         file.write(resp.content)
 
     file = open('data/map.jpg', 'rb')
     bot.send_photo(message.chat.id, file)
-    admin(message)
+    yet_or_exit(message)
 
 
 def questions():
@@ -419,56 +460,35 @@ def del_admin(message):
 
 
 def inp_question(message):
-    global new_text
-    new_text = message.text
-    bot.send_message(message.chat.id, f'Такой вопрос: {new_text}')
-    yes_or_no(message)
-
-
-def inp_order(message):
-    global new_order
-    new_order = message.text
-    bot.send_message(message.chat.id, f'Такой вопрос: {new_text}')
-    yes_or_no(message)
-
-
-def ask(message):
-    global quest
-    text = new_text
-    bot.send_message(message.chat.id, f"Ваш вопрос:\n{text}")
-    quest = text
-
-
-def ladmins():
-    global admin_list
-
-    con = sqlite3.connect('Admins.db')
-    cur = con.cursor()
-    result0 = cur.execute(f"""SELECT Name FROM Admins""").fetchall()
-    con = sqlite3.connect('Users.db')
-    cur = con.cursor()
-    result1 = cur.execute(f"""SELECT ID FROM Users WHERE Name IN ('EfeFe4', 'di_petrin', 'Dinamit6663_1', 'Tester', 'bgalkin')""").fetchall()
-    result2 = [x[0] for x in result1]
-    admin_list = result2
-
-
-def inp_answer(message):
-    global new_text
-    new_text = message.text
-    bot.send_message(message.chat.id, f'Такой ответ: {new_text}')
-    yes_or_no(message)
+    question_from_user = message.text
+    bot.send_message(message.chat.id, f"Ваш вопрос:\n{question_from_user}")
+    send_questions(message.chat.id, question_from_user)
+    yet_or_exit(message)
 
 
 def answer(message):
-    global printed_work
-    text = new_text
+    text = message.text
     bot.send_message(message.chat.id, f'Ваш ответ: {text}')
-    printed_work[1] = text
+    printed_work = get_data_from_column('Printed_work', message.chat.id)
+    print(printed_work)
+    send_answer_from_admin(get_id_from_question(printed_work), text)
+
+
+def show_club():
+    markup = types.InlineKeyboardMarkup()
+    for club in CLUB:
+        btn = types.InlineKeyboardButton(club, callback_data=club)
+        markup.add(btn)
+
+    exit_btn = types.InlineKeyboardButton('Выйти', callback_data='qw_quit')
+    markup.add(exit_btn)
+
+    return markup
 
 
 def grade(message):
+    b = message.text
     try:
-        b = message.text
         a = message.text.split(' ')
         name, last_name = a[1], a[0]
 
@@ -477,12 +497,11 @@ def grade(message):
         response = requests.get(site).json()
 
         bot.send_message(message.chat.id, response[0]['sum_score'])
-        admin(message)
+        yet_or_exit(message)
     except Exception:
         print(f"Неправильный ввод: {b}")
         bot.send_message(message.chat.id, f"Неправильный ввод: {b} \nВозможно данный участник ёще не участвовал \n"
                                           f"Можете обратиться к организаторам")
-        admin(message)
 
 
 def show_questions_from_users(message):
@@ -495,24 +514,15 @@ def show_questions_from_users(message):
 
 
 def send_answer_from_admin(id_of_user, text):
+    printed_work = get_data_from_column('Questions', id_of_user)
+    delete_questions(printed_work)
     bot.send_message(id_of_user, f'Ответ от админа: {text}')
-    delete_questions(printed_work[0])
 
 
 def table(message):
-
-    gen, p = list(), set()
-
-    site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title=%"
-
-    response = requests.get(site).json()
-
-    for i in range(len(response)):
-        p.add(list(response[i].values())[11])
-
     markup = types.InlineKeyboardMarkup()
-    consult = p
-    for i in consult:
+
+    for i in CLUB:
         markup.add(types.InlineKeyboardButton(f'{i}', callback_data=i))
     bot.send_message(message.chat.id, 'Выберите интересующий турнир:', reply_markup=markup)
 
@@ -544,26 +554,26 @@ def slim_shady(message, tour):
         bot.send_document(message.chat.id, f1)
         f1.close()
 
-    admin(message)
+    yet_or_exit(message)
 
 
 def make_main_markup(message):
-    global ADMIN_STATUS
-    name, id = message.from_user.username, message.chat.id
-    if name == 'Uniade_bot':
-        name = message.chat.username
-    ADMIN_STATUS = add_user(name, id)
+    name, name2, id = message.chat.username, message.chat.first_name, message.chat.id
+
+    admin_status = check_admin_status(name)
+    add_user(name, name2, id)  # Добавление нового пользователя
+
     markup = types.InlineKeyboardMarkup()
-    #btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
+    btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
     #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
-    #markup.row(btn1, btn2)
-    #btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
-    #markup.row(btn3)
-    btn4 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
+    markup.row(btn1)
+    btn3 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
+    markup.row(btn3)
+    btn4 = types.InlineKeyboardButton('Музыка', callback_data='music')
     markup.row(btn4)
     #btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
     #markup.row(btn5)
-    btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='contact_the_organizers')
+    btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='send_questions')
     markup.row(btn6)
     btn7 = types.InlineKeyboardButton('ЧаВо⁉️', callback_data='F_A_Q')
     btn8 = types.InlineKeyboardButton('О нас', callback_data='our_social_networks')
@@ -571,7 +581,7 @@ def make_main_markup(message):
     btn9 = types.InlineKeyboardButton('Видео-live', callback_data='video_live')
     btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
     markup.row(btn9, btn10)
-    if ADMIN_STATUS:
+    if admin_status:
         btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
         markup.row(btn_for_admin1)
         btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
@@ -586,6 +596,14 @@ def make_main_markup(message):
         markup.row(btn_for_admin4)
 
     return markup
+
+
+def yet_or_exit(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
+    btn1 = types.KeyboardButton('Ещё раз')
+    btn2 = types.KeyboardButton('Назад')
+    markup.add(btn1, btn2)
+    bot.send_message(message.chat.id, 'Выберите', reply_markup=markup)
 
 
 if __name__ == '__main__':
