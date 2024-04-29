@@ -15,7 +15,8 @@ from for_db_tasks import insert_into_db_data, get_data_from_column
 
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
 # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - мой
-bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
+bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
+
 
 GREETINGS = ['Привет', 'Приветствую вас',
              'Здравствуйте', 'Добрый день',
@@ -41,19 +42,18 @@ def get_clubs():
     return list(p)
 
 
-yet = None  # копия callback
 consult = show_questions()
 CLUB = get_clubs()
 
 
-# def start_markup():
-#     markup = types.InlineKeyboardMarkup(row_width=True)
-#     link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
-#     link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/rg_child_league")
-#     check_keyboard = types.InlineKeyboardButton(text="Проверить", callback_data="check")
-#     markup.add(link_keyboard1, link_keyboard2, check_keyboard)
-#
-#     return markup
+def start_markup():
+    markup = types.InlineKeyboardMarkup(row_width=True)
+    link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
+    link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/rg_child_league")
+    check_keyboard = types.InlineKeyboardButton(text="Проверить", callback_data="check")
+    markup.add(link_keyboard1, link_keyboard2, check_keyboard)
+
+    return markup
 
 
 @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
@@ -61,35 +61,34 @@ def start(message):
     bot.send_message(message.chat.id, choice(GREETINGS))
     name = message.from_user.first_name
 
-    if name == 'Uniade bot' or name == 'Program_by_DED_bot':
+    if name == 'Uniade bot':
         name = message.chat.first_name
 
     bot.send_message(message.chat.id, name)
 
-    # if check(message, message.chat.id) and check_channels_start(message):
-    if True:
+    if check(message, message.chat.id) and check_channels_start(message):
         admin(message)
 
 
-# def check(message, chat_id):
-#     st = bot.get_chat_member(chat_id, user_id=message.chat.id).status
-#     return st in ["creator", "administrator", "member"]
+def check(message, chat_id):
+    st = bot.get_chat_member(chat_id, user_id=message.chat.id).status
+    return st in ["creator", "administrator", "member"]
 
 
-# def check_channels_start(message):
-#     markup = types.InlineKeyboardMarkup(row_width=True)
-#     if check(message, "-1001649523664") and check(message, '-1001729713697'):
-#         bot.send_message(message.chat.id, "Спасибо за подписку ✨")
-#         markup.add(admin(message))
-#     else:
-#         bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
-#
-#
-# def check_channels(message):
-#     if check(message, "-1001649523664") and check(message, '-1001729713697'):
-#         return True
-#     else:
-#         bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+def check_channels_start(message):
+    markup = types.InlineKeyboardMarkup(row_width=True)
+    if check(message, "-1001649523664") and check(message, '-1001729713697'):
+        bot.send_message(message.chat.id, "Спасибо за подписку ✨")
+        markup.add(admin(message))
+    else:
+        bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+
+
+def check_channels(message):
+    if check(message, "-1001649523664") and check(message, '-1001729713697'):
+        return True
+    else:
+        bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
 
 
 def admin(message):
@@ -108,10 +107,7 @@ def bye(message):
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_message(callback):
-    # if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
-    if True:
-        global yet
-        yet = callback
+    if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
         id_of_user = callback.message.chat.id
         print(f"{get_data_from_column('Command', id_of_user)} - command by "
               f"{get_data_from_column('User_name', id_of_user)}")
@@ -331,9 +327,6 @@ def func(message):
         bot.send_message(message.chat.id, "Повторите")
         bot.register_next_step_handler(message, inp_name)
 
-    # elif message.text == 'Ещё раз':
-    #     callback_message(yet)
-
     elif message.text == 'Назад':
         admin(message)
 
@@ -409,11 +402,6 @@ def yes_or_no(message):
     bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
 
 
-# def buy_drink(message):
-#     bot.send_message(message.chat.id, f'Ваш напиток - {message.text}')
-#     yet_or_exit(message)
-
-
 def count_of_users(message):
     site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getUsersCount"
 
@@ -464,8 +452,8 @@ def questions():
     markup2.add(types.InlineKeyboardButton('Как поучаствовать в Юниаде онлайн?', callback_data='qw_9'))
     markup2.add(types.InlineKeyboardButton('Как загрузить фото, чтобы попасть на экран?', callback_data='qw_10'))
     markup2.add(types.InlineKeyboardButton('Куда сдавать музыку?', callback_data='qw_11'))
-    # markup2.add(types.InlineKeyboardButton('Кто разработал бот?', callback_data='qw_12'))
-    # markup2.add(types.InlineKeyboardButton('Как пройти в зал соревнований?', callback_data='qw_13'))
+    #markup2.add(types.InlineKeyboardButton('Кто разработал бот?', callback_data='qw_12'))
+    #markup2.add(types.InlineKeyboardButton('Как пройти в зал соревнований?', callback_data='qw_13'))
     markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
     return markup2
 
@@ -619,8 +607,7 @@ def make_main_markup(message):
         markup.row(btn_for_admin1)
         btn_for_admin2 = types.InlineKeyboardButton('Удалить админа', callback_data='delete_admin')
         markup.row(btn_for_admin2)
-        btn_for_admin3 = types.InlineKeyboardButton('Вопросы от пользователей',
-                                                    callback_data='show_questions_from_users')
+        btn_for_admin3 = types.InlineKeyboardButton('Вопросы от пользователей', callback_data='show_questions_from_users')
         markup.row(btn_for_admin3)
         # Временная кнопка
         btn_for_admin3 = types.InlineKeyboardButton('Количество пользователей', callback_data='show_count_of_users')
