@@ -101,12 +101,10 @@ def preadmin(message):
 
 
 def proadmin(message):
-    a = bot.send_message(message.chat.id, '.', reply_markup=ReplyKeyboardRemove())
-    bot.delete_message(message.chat.id, a.message_id)
-
-    markup = judge_status_markup(message)
-
-    bot.send_message(message.chat.id, 'Выберите, если Вы судья:', reply_markup=markup)
+    bot.edit_message_text(f'Выберите, если Вы судья:',
+                          reply_markup=judge_status_markup(),
+                          chat_id=message.chat.id,
+                          message_id=message.message_id)
 
 
 @bot.message_handler(commands=['bye', 'end', 'пока'])
@@ -591,7 +589,8 @@ def add_judge(status, name):
     cur = con.cursor()
     result = cur.execute(f"""SELECT Name, Quality from Judges WHERE Name = ?""", (name, )).fetchall()
     if result:
-        note = f'Данный пользователь уже зарегистрирован как судья {result[0][1]}'
+        cur.execute(f"""UPDATE Judges SET Quality = '{status}' WHERE Name = '{name}' """)
+        note = f'Статус судьи изменен на {status}'
     else:
         cur.execute(f"""INSERT INTO Judges(Name, Quality) VALUES('{name}', '{status}')""").fetchall()
         note = f'Судья {status} зарегистрирован'
@@ -600,7 +599,7 @@ def add_judge(status, name):
     return note
 
 
-def judge_status_markup(message):
+def judge_status_markup():
     markup = types.InlineKeyboardMarkup()
     btn_E1 = types.InlineKeyboardButton('E1', callback_data='E1')
     btn_E2 = types.InlineKeyboardButton('E2', callback_data='E2')
