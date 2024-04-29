@@ -140,8 +140,6 @@ def callback_message(callback):
             bot.send_message(callback.message.chat.id, "Сделайте заказ")
             insert_into_db_data('drink', 'Command', id_of_user)
             bot.register_next_step_handler(callback.message, buy_drink)
-        # elif callback.data == 'check':
-        #     start(callback.message)
         elif callback.data == 'F_A_Q':
             bot.edit_message_text(f'Вопросы:',
                                   reply_markup=questions(),
@@ -151,7 +149,10 @@ def callback_message(callback):
             bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:")
             bot.register_next_step_handler(callback.message, grade)
         elif callback.data == 'show_questions_from_users':
-            show_questions_from_users(callback.message)
+            bot.edit_message_text(f'Вопросы от пользователей:',
+                                  reply_markup=show_questions_from_users(),
+                                  chat_id=callback.message.chat.id,
+                                  message_id=callback.message.message_id)
         elif callback.data == 'send_questions':
             bot.send_message(callback.message.chat.id, "Напишите вопрос")
             bot.register_next_step_handler(callback.message, inp_question)
@@ -178,8 +179,11 @@ def callback_message(callback):
         elif callback.data == 'show_count_of_users':
             count_of_users(callback.message)
         elif callback.data == 'table':
-            table(callback.message)
             insert_into_db_data('get_table', 'Command', id_of_user)
+            bot.edit_message_text(f'Выберите интересующий турнир:',
+                                  reply_markup=change_on_table(),
+                                  chat_id=callback.message.chat.id,
+                                  message_id=callback.message.message_id)
 
         elif callback.data == 'qw_1':
             # file = open('data/checkroom0.jpg', 'rb')
@@ -324,8 +328,8 @@ def func(message):
         bot.send_message(message.chat.id, "Повторите")
         bot.register_next_step_handler(message, inp_name)
 
-    # elif message.text == 'Ещё раз':
-    #     callback_message(yet)
+    elif message.text == 'Ещё раз':
+        callback_message(yet)
 
     elif message.text == 'Назад':
         admin(message)
@@ -404,7 +408,6 @@ def count_of_users(message):
     response = requests.get(site)
 
     bot.send_message(message.chat.id, remove_html_tags(response.content.decode()))
-    yet_or_exit(message)
 
 
 def remove_html_tags(text):
@@ -505,13 +508,16 @@ def grade(message):
                                           f"Можете обратиться к организаторам")
 
 
-def show_questions_from_users(message):
+def show_questions_from_users():
     global consult
     markup = types.InlineKeyboardMarkup()
     consult = show_questions()
     for i in consult:
         markup.add(types.InlineKeyboardButton(f'{i[1]}', callback_data=i[0]))
-    bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
+    ret = types.InlineKeyboardButton(f'Выйти', callback_data='qw_quit')
+    markup.add(ret)
+
+    return markup
 
 
 def send_answer_from_admin(id_of_user, text):
@@ -520,12 +526,15 @@ def send_answer_from_admin(id_of_user, text):
     bot.send_message(id_of_user, f'Ответ от админа: {text}')
 
 
-def table(message):
+def change_on_table():
     markup = types.InlineKeyboardMarkup()
 
     for i in CLUB:
         markup.add(types.InlineKeyboardButton(f'{i}', callback_data=i))
-    bot.send_message(message.chat.id, 'Выберите интересующий турнир:', reply_markup=markup)
+    ret = types.InlineKeyboardButton(f'Выйти', callback_data='qw_quit')
+    markup.add(ret)
+
+    return markup
 
 
 def slim_shady(message, tour):
