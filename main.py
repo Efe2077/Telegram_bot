@@ -118,7 +118,7 @@ def callback_message(callback):
         print(f"{get_data_from_column('Command', id_of_user)} - command by "
               f"{get_data_from_column('User_name', id_of_user)}")
         if callback.data == 'add_new_admin':
-            bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа")
+            bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа", reply_markup=based_markup())
 
             file = open('data/telegram_username.jpg', 'rb')
             bot.send_photo(callback.message.chat.id, file)
@@ -166,7 +166,22 @@ def callback_message(callback):
             # ask(callback.message)
             # send_questions(callback.message.chat.id, quest)
             # admin(callback.message)
-
+        elif callback.data == 'video_live':
+            markup = types.InlineKeyboardMarkup()
+            markup.add(
+                types.InlineKeyboardButton('Трансляция', url='https://vk.com/video-211067501_456239145'))
+            markup.add(types.InlineKeyboardButton('Назад', callback_data='qw_quit'))
+            bot.reply_to(callback.message,
+                         'Скорее смотреть!!!',
+                         reply_markup=markup)
+        elif callback.data == 'text_live':
+            markup = types.InlineKeyboardMarkup()
+            markup.add(
+                types.InlineKeyboardButton('Репортаж', url='https://vk.com/textlive547685'))
+            markup.add(types.InlineKeyboardButton('Назад', callback_data='qw_quit'))
+            bot.reply_to(callback.message,
+                         'Скорее читать!!!',
+                         reply_markup=markup)
         elif callback.data in CLUB:
             if get_data_from_column('Command', id_of_user) == 'get_table':
                 slim_shady(callback.message, callback.data)
@@ -178,7 +193,7 @@ def callback_message(callback):
         elif callback.data.isdigit():
             if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
                 insert_into_db_data('answer_to_question', 'Command', id_of_user)
-                bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
+                bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'", reply_markup=based_markup())
                 insert_into_db_data(consult[int(callback.data) - 1][1], 'Printed_work', id_of_user)
                 bot.register_next_step_handler(callback.message, answer)
 
@@ -388,6 +403,8 @@ def inp_folder(message):
 
 def inp_name(message):
     text = message.text
+    if text == 'Назад':
+        return admin(message)
     insert_into_db_data(text, 'Name_of_smb', message.chat.id)
     bot.send_message(message.chat.id, f'Такое имя: {text}?')
     yes_or_no(message)
@@ -464,7 +481,7 @@ def questions():
 
 def del_admin(message):
     bot.send_message(message.chat.id, 'Внимание! Вы можете удалить только тех админов, которых вы добавляли')
-    bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа")
+    bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа", reply_markup=based_markup())
     bot.register_next_step_handler(message, inp_name)
 
 
@@ -479,6 +496,8 @@ def inp_question(message):
 
 def answer(message):
     text = message.text
+    if text == 'Назад':
+        return admin(message)
     bot.send_message(message.chat.id, f'Ваш ответ: {text}')
     printed_work = get_data_from_column('Printed_work', message.chat.id)
     print(printed_work)
@@ -535,9 +554,9 @@ def send_answer_from_admin(id_of_user, text):
 
 def table(message):
     markup = types.InlineKeyboardMarkup()
-
     for i in CLUB:
         markup.add(types.InlineKeyboardButton(f'{i}', callback_data=i))
+    markup.add(types.InlineKeyboardButton('Назад', callback_data='qw_quit'))
     bot.send_message(message.chat.id, 'Выберите интересующий турнир:', reply_markup=markup)
 
 
@@ -592,8 +611,8 @@ def make_main_markup(message):
     btn7 = types.InlineKeyboardButton('ЧаВо⁉️', callback_data='F_A_Q')
     btn8 = types.InlineKeyboardButton('О нас', callback_data='our_social_networks')
     markup.row(btn7, btn8)
-    btn9 = types.InlineKeyboardButton('Видео-live', url='https://vk.com/rg_child_league?z=video-211067501_456239145%2Fvideos-211067501%2Fpl_-211067501_-2')
-    btn10 = types.InlineKeyboardButton('Репортаж', callback_data='https://vk.com/textlive547685')
+    btn9 = types.InlineKeyboardButton('Видео-live', callback_data='video_live')
+    btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
     markup.row(btn9, btn10)
     if admin_status:
         btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
