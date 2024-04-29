@@ -314,13 +314,11 @@ def func(message):
         name_of_smb = get_data_from_column('Name_of_smb', message.chat.id)
         if get_data_from_column('Command', message.chat.id) == 'add_admin':
             mess = add_admin(user_name, name_of_smb)
-            bot.send_message(message.chat.id, mess)
-            yet_or_exit(message)
+            bot.send_message(message.chat.id, mess, reply_markup=btn_for_exit())
 
         elif get_data_from_column('Command', message.chat.id) == 'delete_admin':
             mess = delete_your_admins(user_name, name_of_smb)
-            bot.send_message(message.chat.id, mess)
-            yet_or_exit(message)
+            bot.send_message(message.chat.id, mess, reply_markup=btn_for_exit())
 
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -374,9 +372,8 @@ def send_audio_into_folder(message):
             bot.send_message(message.chat.id, 'Файл с таким названием уже существует\n'
                                               'Поменяйте название файла и прикрепите его повторно')
         else:
-            bot.send_message(message.chat.id, 'Файл успешно прикреплен')
+            bot.send_message(message.chat.id, 'Файл успешно прикреплен', reply_markup=btn_for_exit())
             insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
-            yet_or_exit(message)
 
 
 def inp_folder(message):
@@ -445,8 +442,7 @@ def location(message):
         file.write(resp.content)
 
     file = open('data/map.jpg', 'rb')
-    bot.send_photo(message.chat.id, file)
-    yet_or_exit(message)
+    bot.send_photo(message.chat.id, file, reply_markup=btn_for_exit())
 
 
 def questions():
@@ -487,9 +483,8 @@ def inp_question(message):
         admin(message)
         return 0
     question_from_user = message.text
-    bot.send_message(message.chat.id, f"Ваш вопрос:\n{question_from_user}")
+    bot.send_message(message.chat.id, f"Ваш вопрос:\n{question_from_user}", reply_markup=btn_for_exit())
     send_questions(message.chat.id, question_from_user)
-    yet_or_exit(message)
 
 
 def answer(message):
@@ -526,8 +521,7 @@ def grade(message):
 
         response = requests.get(site).json()
 
-        bot.send_message(message.chat.id, response[0]['sum_score'])
-        yet_or_exit(message)
+        bot.send_message(message.chat.id, response[0]['sum_score'], reply_markup=btn_for_exit())
     except Exception:
         print(f"Неправильный ввод: {b}")
         bot.send_message(message.chat.id, f"Неправильный ввод: {b} \nВозможно данный участник ёще не участвовал \n"
@@ -588,10 +582,8 @@ def slim_shady(message, tour):
             worksheet.write_row(row_num, 0, data)
 
     with open('test.xlsx', 'rb') as f1:
-        bot.send_document(message.chat.id, f1)
+        bot.send_document(message.chat.id, f1, reply_markup=btn_for_exit())
         f1.close()
-
-    yet_or_exit(message)
 
 
 def make_main_markup(message):
@@ -642,15 +634,6 @@ def btn_for_exit():
     markup.add(btn2)
 
     return markup
-
-
-def yet_or_exit(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
-    btn1 = types.KeyboardButton('Ещё раз')
-    btn2 = types.KeyboardButton('Назад')
-    markup.add(btn1, btn2)
-    bot.send_message(message.chat.id, 'Выберите', reply_markup=markup)
-
 
 if __name__ == '__main__':
     bot.polling(none_stop=True)
