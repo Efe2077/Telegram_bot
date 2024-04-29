@@ -9,7 +9,7 @@ from telebot import types
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
-from add_new import check_admin_status, add_admin, delete_your_admins, add_user
+from add_new import check_admin_status, add_admin, delete_your_admins, add_user, ladmins
 from for_yandex_disk import download_file_to_club
 from for_db_tasks import insert_into_db_data, get_data_from_column
 
@@ -43,9 +43,9 @@ def get_clubs():
     return list(p)
 
 
-yet = None  # копия callback
 consult = show_questions()
 CLUB = get_clubs()
+admin_list = []
 
 
 def start_markup():
@@ -112,24 +112,27 @@ def bye(message):
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_message(callback):
     if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
-        global yet
-        yet = callback
         id_of_user = callback.message.chat.id
         print(f"{get_data_from_column('Command', id_of_user)} - command by "
               f"{get_data_from_column('User_name', id_of_user)}")
         if callback.data == 'add_new_admin':
-            bot.send_message(callback.message.chat.id, "Напишите 'Имя пользователя в телеграмме' вашего нового админа", reply_markup=based_markup())
+            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+            bot.send_message(callback.message.chat.id,
+                             "Напишите 'Имя пользователя в телеграмме' вашего нового админа",
+                             reply_markup=btn_for_exit()
+                             )
 
             file = open('data/telegram_username.jpg', 'rb')
             bot.send_photo(callback.message.chat.id, file)
             insert_into_db_data('add_admin', 'Command', id_of_user)
             bot.register_next_step_handler(callback.message, inp_name)
         elif callback.data == 'delete_admin':
+            bot.delete_message(callback.message.chat.id, callback.message.message_id)
             insert_into_db_data('delete_admin', 'Command', id_of_user)
             del_admin(callback.message)
         elif callback.data == 'our_social_networks':
             bot.send_message(callback.message.chat.id, 'Вы уже подписаны на наши каналы в Телеграмм'
-                                                       ' и можете узнать многое там', reply_markup=based_markup())
+                                                       ' и можете узнать многое там')
             markup = types.InlineKeyboardMarkup()
             markup.add(
                 types.InlineKeyboardButton('VK', url='https://vk.com/club211067501'))
@@ -144,24 +147,28 @@ def callback_message(callback):
                                   reply_markup=show_club(),
                                   chat_id=callback.message.chat.id,
                                   message_id=callback.message.message_id)
-        elif callback.data == 'buy_drink':
-            bot.send_message(callback.message.chat.id, "Сделайте заказ")
-            insert_into_db_data('drink', 'Command', id_of_user)
-            bot.register_next_step_handler(callback.message, buy_drink)
-        # elif callback.data == 'check':
-        #     start(callback.message)
+        # elif callback.data == 'buy_drink':
+        #     bot.send_message(callback.message.chat.id, "Сделайте заказ")
+        #     insert_into_db_data('drink', 'Command', id_of_user)
+        #     bot.register_next_step_handler(callback.message, buy_drink)
         elif callback.data == 'F_A_Q':
             bot.edit_message_text(f'Вопросы:',
                                   reply_markup=questions(),
                                   chat_id=callback.message.chat.id,
                                   message_id=callback.message.message_id)
         elif callback.data == 'grade':
-            bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:", reply_markup=based_markup())
+            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+            bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:",
+                             reply_markup=btn_for_exit())
             bot.register_next_step_handler(callback.message, grade)
         elif callback.data == 'show_questions_from_users':
-            show_questions_from_users(callback.message)
+            bot.edit_message_text(f'Вопросы от пользователей:',
+                                  reply_markup=show_questions_from_users(),
+                                  chat_id=callback.message.chat.id,
+                                  message_id=callback.message.message_id)
         elif callback.data == 'send_questions':
-            bot.send_message(callback.message.chat.id, "Напишите вопрос", reply_markup=based_markup())
+            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+            bot.send_message(callback.message.chat.id, "Напишите вопрос", reply_markup=btn_for_exit())
             bot.register_next_step_handler(callback.message, inp_question)
             # ask(callback.message)
             # send_questions(callback.message.chat.id, quest)
@@ -182,26 +189,33 @@ def callback_message(callback):
             bot.reply_to(callback.message,
                          'Скорее читать!!!',
                          reply_markup=markup)
+
         elif callback.data in CLUB:
             if get_data_from_column('Command', id_of_user) == 'get_table':
+                bot.delete_message(callback.message.chat.id, callback.message.message_id)
                 slim_shady(callback.message, callback.data)
-                callback.data = 'table'
             elif get_data_from_column('Command', id_of_user) == 'send_file_to_folder':
                 insert_into_db_data(callback.data, 'Your_club', id_of_user)
-                bot.send_message(callback.message.chat.id, 'Напишите ФИО', reply_markup=based_markup())
+                bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                bot.send_message(callback.message.chat.id, 'Напишите ФИО', reply_markup=btn_for_exit())
                 bot.register_next_step_handler(callback.message, inp_folder)
         elif callback.data.isdigit():
             if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
                 insert_into_db_data('answer_to_question', 'Command', id_of_user)
-                bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'", reply_markup=based_markup())
+                bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
                 insert_into_db_data(consult[int(callback.data) - 1][1], 'Printed_work', id_of_user)
                 bot.register_next_step_handler(callback.message, answer)
 
         elif callback.data == 'show_count_of_users':
             count_of_users(callback.message)
         elif callback.data == 'table':
-            table(callback.message)
             insert_into_db_data('get_table', 'Command', id_of_user)
+            bot.edit_message_text(f'Выберите интересующий турнир:',
+                                  reply_markup=change_on_table(),
+                                  chat_id=callback.message.chat.id,
+                                  message_id=callback.message.message_id)
+
         elif callback.data == 'qw_1':
             file = open('data/checkroom0.jpg', 'rb')
             bot.send_photo(callback.message.chat.id, file)
@@ -308,10 +322,7 @@ def callback_message(callback):
             bot.send_photo(callback.message.chat.id, file)
             bot.send_message(callback.message.chat.id,
                              'Далее нажмите "Загрузить фото"')
-            # ret(callback)
-        # elif callback.data == 'qw_12':
-        #     bot.send_message(callback.message.chat.id, 'ответ 10')
-        #     ret(callback)
+
         elif callback.data == 'qw_quit':
             bot.edit_message_text(f'Вы можете выполнить такие функции:',
                                   reply_markup=make_main_markup(callback.message),
@@ -326,13 +337,11 @@ def func(message):
         name_of_smb = get_data_from_column('Name_of_smb', message.chat.id)
         if get_data_from_column('Command', message.chat.id) == 'add_admin':
             mess = add_admin(user_name, name_of_smb)
-            bot.send_message(message.chat.id, mess)
-            yet_or_exit(message)
+            bot.send_message(message.chat.id, mess, reply_markup=btn_for_exit())
 
         elif get_data_from_column('Command', message.chat.id) == 'delete_admin':
             mess = delete_your_admins(user_name, name_of_smb)
-            bot.send_message(message.chat.id, mess)
-            yet_or_exit(message)
+            bot.send_message(message.chat.id, mess, reply_markup=btn_for_exit())
 
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -344,9 +353,6 @@ def func(message):
     elif message.text == 'Написать еще раз':
         bot.send_message(message.chat.id, "Повторите")
         bot.register_next_step_handler(message, inp_name)
-
-    # elif message.text == 'Ещё раз':
-    #     callback_message(yet)
 
     elif message.text == 'Назад':
         admin(message)
@@ -386,15 +392,17 @@ def send_audio_into_folder(message):
             bot.send_message(message.chat.id, 'Файл с таким названием уже существует\n'
                                               'Поменяйте название файла и прикрепите его повторно')
         else:
-            bot.send_message(message.chat.id, 'Файл успешно прикреплен')
+            bot.send_message(message.chat.id, 'Файл успешно прикреплен', reply_markup=btn_for_exit())
             insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
-            yet_or_exit(message)
 
 
 def inp_folder(message):
+    if message.text == 'Назад':
+        bot.delete_message(message.chat.id, message.message_id - 1)
+        admin(message)
+        return 0
     text = message.text
-    if text == 'Назад':
-        return admin(message)
+    text = text.capitalize()
     insert_into_db_data(text, 'Fio', message.chat.id)
     bot.send_message(message.chat.id, f'Ваша папка: \n{text}')
     insert_into_db_data('sending_file', 'Command', message.chat.id)
@@ -402,9 +410,12 @@ def inp_folder(message):
 
 
 def inp_name(message):
+    if message.text == 'Назад':
+        bot.delete_message(message.chat.id, message.message_id - 1)
+        bot.delete_message(message.chat.id, message.message_id - 2)
+        admin(message)
+        return 0
     text = message.text
-    if text == 'Назад':
-        return admin(message)
     insert_into_db_data(text, 'Name_of_smb', message.chat.id)
     bot.send_message(message.chat.id, f'Такое имя: {text}?')
     yes_or_no(message)
@@ -418,18 +429,12 @@ def yes_or_no(message):
     bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
 
 
-def buy_drink(message):
-    bot.send_message(message.chat.id, f'Ваш напиток - {message.text}')
-    yet_or_exit(message)
-
-
 def count_of_users(message):
     site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getUsersCount"
 
     response = requests.get(site)
 
     bot.send_message(message.chat.id, remove_html_tags(response.content.decode()))
-    yet_or_exit(message)
 
 
 def remove_html_tags(text):
@@ -456,15 +461,16 @@ def location(message):
         file.write(resp.content)
 
     file = open('data/map.jpg', 'rb')
-    bot.send_photo(message.chat.id, file)
-    yet_or_exit(message)
+    bot.send_photo(message.chat.id, file, reply_markup=btn_for_exit())
 
 
 def questions():
     markup2 = types.InlineKeyboardMarkup()
-    markup2.add(types.InlineKeyboardButton('Где раздевалка?', callback_data='qw_1')) #фото-ряд
-    markup2.add(types.InlineKeyboardButton('Где найти рейтинг Юниады?', callback_data='qw_2')) #https://uniade.world/profile
-    markup2.add(types.InlineKeyboardButton('Как посмотреть оценки?', callback_data='qw_3')) #нужно набрать 100 реакций https://t.me/rg_child_league/491
+    markup2.add(types.InlineKeyboardButton('Где раздевалка?', callback_data='qw_1'))  # фото-ряд
+    markup2.add(
+        types.InlineKeyboardButton('Где найти рейтинг Юниады?', callback_data='qw_2'))  # https://uniade.world/profile
+    markup2.add(types.InlineKeyboardButton('Как посмотреть оценки?',
+                                           callback_data='qw_3'))  # нужно набрать 100 реакций https://t.me/rg_child_league/491
     markup2.add(types.InlineKeyboardButton('Как заказать фотографии?', callback_data='qw_4'))
     markup2.add(types.InlineKeyboardButton('Как найти визажиста на турнире?', callback_data='qw_5'))
     markup2.add(types.InlineKeyboardButton('Зачем нужен гонг?', callback_data='qw_6'))
@@ -480,28 +486,35 @@ def questions():
 
 
 def del_admin(message):
+    if message.text == 'Назад':
+        bot.delete_message(message.chat.id, message.message_id - 1)
+        bot.delete_message(message.chat.id, message.message_id - 2)
+        admin(message)
+        return 0
     bot.send_message(message.chat.id, 'Внимание! Вы можете удалить только тех админов, которых вы добавляли')
-    bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа", reply_markup=based_markup())
+    bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа",
+                     reply_markup=btn_for_exit())
     bot.register_next_step_handler(message, inp_name)
 
 
 def inp_question(message):
-    question_from_user = message.text
     if message.text == 'Назад':
-        return admin(message)
-    bot.send_message(message.chat.id, f"Ваш вопрос:\n{question_from_user}")
+        admin(message)
+        return 0
+    question_from_user = message.text
+    bot.send_message(message.chat.id, f"Ваш вопрос:\n{question_from_user}", reply_markup=btn_for_exit())
     send_questions(message.chat.id, question_from_user)
-    yet_or_exit(message)
+    admin_list = ladmins()
+    for i in admin_list:
+        bot.send_message(int(i), 'Новый вопрос от пользователя!!!')
 
 
 def answer(message):
     text = message.text
-    if text == 'Назад':
-        return admin(message)
     bot.send_message(message.chat.id, f'Ваш ответ: {text}')
     printed_work = get_data_from_column('Printed_work', message.chat.id)
     print(printed_work)
-    send_answer_from_admin(get_id_from_question(printed_work), text)
+    send_answer_from_admin(message, get_id_from_question(printed_work), text)
 
 
 def show_club():
@@ -517,6 +530,10 @@ def show_club():
 
 
 def grade(message):
+    if message.text == 'Назад':
+        bot.delete_message(message.chat.id, message.message_id-1)
+        admin(message)
+        return 0
     b = message.text
     try:
         a = message.text.split(' ')
@@ -526,38 +543,40 @@ def grade(message):
 
         response = requests.get(site).json()
 
-        bot.send_message(message.chat.id, response[0]['sum_score'])
-        yet_or_exit(message)
+        bot.send_message(message.chat.id, response[0]['sum_score'], reply_markup=btn_for_exit())
     except Exception:
-        if b == 'Назад':
-            admin(message)
-        else:
-            print(f"Неправильный ввод: {b}")
-            bot.send_message(message.chat.id, f"Неправильный ввод: {b} \n Возможно данный участник ёще не участвовал\n"
-                                              f"Можете обратиться к организаторам")
+        print(f"Неправильный ввод: {b}")
+        bot.send_message(message.chat.id, f"Неправильный ввод: {b} \nВозможно данный участник ёще не участвовал \n"
+                                          f"Можете обратиться к организаторам")
 
 
-def show_questions_from_users(message):
+def show_questions_from_users():
     global consult
     markup = types.InlineKeyboardMarkup()
     consult = show_questions()
     for i in consult:
         markup.add(types.InlineKeyboardButton(f'{i[1]}', callback_data=i[0]))
-    bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
+    ret = types.InlineKeyboardButton(f'Выйти', callback_data='qw_quit')
+    markup.add(ret)
+
+    return markup
 
 
-def send_answer_from_admin(id_of_user, text):
+def send_answer_from_admin(message, id_of_user, text):
     printed_work = get_data_from_column('Questions', id_of_user)
     delete_questions(printed_work)
     bot.send_message(id_of_user, f'Ответ от админа: {text}')
+    admin(message)
 
 
-def table(message):
+def change_on_table():
     markup = types.InlineKeyboardMarkup()
     for i in CLUB:
         markup.add(types.InlineKeyboardButton(f'{i}', callback_data=i))
-    markup.add(types.InlineKeyboardButton('Назад', callback_data='qw_quit'))
-    bot.send_message(message.chat.id, 'Выберите интересующий турнир:', reply_markup=markup)
+    ret = types.InlineKeyboardButton(f'Выйти', callback_data='qw_quit')
+    markup.add(ret)
+
+    return markup
 
 
 def slim_shady(message, tour):
@@ -584,10 +603,8 @@ def slim_shady(message, tour):
             worksheet.write_row(row_num, 0, data)
 
     with open('test.xlsx', 'rb') as f1:
-        bot.send_document(message.chat.id, f1)
+        bot.send_document(message.chat.id, f1, reply_markup=btn_for_exit())
         f1.close()
-
-    yet_or_exit(message)
 
 
 def make_main_markup(message):
@@ -597,15 +614,15 @@ def make_main_markup(message):
     add_user(name, name2, id)  # Добавление нового пользователя
 
     markup = types.InlineKeyboardMarkup()
-    btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
-    #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
-    markup.row(btn1)
+    # btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
+    # #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
+    # markup.row(btn1)
     btn3 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
     markup.row(btn3)
     btn4 = types.InlineKeyboardButton('Музыка', callback_data='music')
     markup.row(btn4)
-    #btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
-    #markup.row(btn5)
+    # btn5 = types.InlineKeyboardButton('Время выступления', callback_data='performance_time')
+    # markup.row(btn5)
     btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='send_questions')
     markup.row(btn6)
     btn7 = types.InlineKeyboardButton('ЧаВо⁉️', callback_data='F_A_Q')
@@ -631,19 +648,12 @@ def make_main_markup(message):
     return markup
 
 
-def based_markup():
+def btn_for_exit():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
-    btn1 = types.KeyboardButton('Назад')
-    markup.row(btn1)
-    return markup
-
-
-def yet_or_exit(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
-    btn1 = types.KeyboardButton('Ещё раз')
     btn2 = types.KeyboardButton('Назад')
-    markup.add(btn1, btn2)
-    bot.send_message(message.chat.id, 'Выберите', reply_markup=markup)
+    markup.add(btn2)
+
+    return markup
 
 
 if __name__ == '__main__':
