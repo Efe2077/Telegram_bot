@@ -44,13 +44,18 @@ def send_suggestion_text(user_id, question):
 def show_suggestion():
     con = sqlite3.connect('Users.db')
     cur = con.cursor()
-    result = cur.execute(f"""SELECT photo FROM Users WHERE photo != 'None' """).fetchall()
-    list_of_questions = []
+    result = cur.execute(f"""SELECT text FROM Users WHERE photo != 'None' """).fetchall()
+    list_of_text = []
 
     for num, el in enumerate(result):
-        list_of_questions.append((num + 1, el[0]))
+        list_of_text.append((num + 1, el[0]))
 
+    result = cur.execute(f"""SELECT photo FROM Users WHERE photo != 'None' """).fetchall()
+    list_of_photo = []
+
+    for num, el in enumerate(result):
+        list_of_photo.append((num + 1, el[0]))
     con.commit()
     con.close()
 
-    return list_of_questions
+    return list_of_text, list_of_photo

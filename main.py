@@ -394,11 +394,11 @@ def inp_suggestion(message):
 
 
 def show_suggestion_from_users(message):
-    global consult
     markup = types.InlineKeyboardMarkup()
     consult = show_suggestion()
-    for i in consult:
-        markup.add(types.InlineKeyboardButton(f'{i[1]}', callback_data=i[0]))
+    for i in consult[0]:
+        print(i[0])
+        markup.add(types.InlineKeyboardButton(f'{i[1]}', callback_data=i[1]))
     bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
 
 
