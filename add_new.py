@@ -121,6 +121,7 @@ def delete_your_admins(your_name, name):
 # ДЗ
 # Сделать круто!!!!!!!!!!!!
 
+# Делал Денис
 def ladmins():
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
