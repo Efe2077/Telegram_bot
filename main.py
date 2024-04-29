@@ -28,6 +28,7 @@ GOODBYES = ['До свидания', 'Всего хорошего',
 
 command = None
 ADMIN_STATUS = None
+JUDGE_STATUS = None
 new_text = None
 USER_NAME = None
 quest = None
@@ -55,9 +56,7 @@ def start(message):
     if name == 'Uniade bot':
         name = message.chat.first_name
         USER_NAME = message.chat.username
-
     bot.send_message(message.chat.id, name)
-
     if check(message, message.chat.id) and check_channels_start(message):
         admin(message)
 
@@ -71,7 +70,7 @@ def check_channels_start(message):
     markup = types.InlineKeyboardMarkup(row_width=True)
     if check(message, "-1001649523664") and check(message, '-1001729713697'):
         bot.send_message(message.chat.id, "Спасибо за подписку ✨")
-        markup.add(admin(message))
+        markup.add(preadmin(message))
     else:
         bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
 
@@ -90,6 +89,24 @@ def admin(message):
     markup = make_main_markup(message)
 
     bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
+
+
+def preadmin(message):
+    a = bot.send_message(message.chat.id, '.', reply_markup=ReplyKeyboardRemove())
+    bot.delete_message(message.chat.id, a.message_id)
+
+    markup = make_judge_markup(message)
+
+    bot.send_message(message.chat.id, 'Выберите, если Вы судья:', reply_markup=markup)
+
+
+def proadmin(message):
+    a = bot.send_message(message.chat.id, '.', reply_markup=ReplyKeyboardRemove())
+    bot.delete_message(message.chat.id, a.message_id)
+
+    markup = judge_status_markup(message)
+
+    bot.send_message(message.chat.id, 'Выберите, если Вы судья:', reply_markup=markup)
 
 
 @bot.message_handler(commands=['bye', 'end', 'пока'])
@@ -138,7 +155,6 @@ def callback_message(callback):
             bot.register_next_step_handler(callback.message, inp_question)
         elif callback.data == 'show_questions_from_users':
             show_questions_from_users(callback.message)
-
         elif callback.data in ['Московская зима 2024', 'Спортивная Весна 2024', 'Зимняя Сказка 2023', 'Маленькая принцесса 2024']:
             slim_shady(callback.message, callback.data)
 
@@ -169,6 +185,17 @@ def callback_message(callback):
             bot.reply_to(callback.message,
                          'Скорее смотреть!!!',
                          reply_markup=markup)
+        elif callback.data == 'not_judge':
+            admin(callback.message)
+        elif callback.data == 'judge_enter':
+            status_judge(callback.message)
+        elif callback.data in ['E1', 'E2', 'E3', 'E4', 'A1', 'A2', 'A3', 'A4', 'DA1', 'DA2', 'DB1', 'DB2', 'Главный_судья', 'Главный_секретарь']:
+            bot.send_message(callback.message.chat.id, add_judge(callback.data, USER_NAME))
+            markup = types.InlineKeyboardMarkup(row_width=True)
+            markup.add(admin(callback.message))
+        elif callback.data == 'Перепутал':
+            markup = types.InlineKeyboardMarkup(row_width=True)
+            markup.add(preadmin(callback.message))
         elif callback.data == 'qw_1':
             # file = open('data/checkroom0.jpg', 'rb')
             # bot.send_photo(callback.message.chat.id, file)
@@ -294,7 +321,6 @@ def func(message):
             mess = add_admin(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
             admin(message)
-
         elif command == 'delete_admin':
             mess = delete_your_admins(USER_NAME, new_text)
             bot.send_message(message.chat.id, mess)
@@ -547,14 +573,68 @@ def slim_shady(message, tour):
     admin(message)
 
 
+def status_judge(message):
+    markup = types.InlineKeyboardMarkup(row_width=True)
+    markup.add(proadmin(message))
+
+
+def make_judge_markup(message):
+    markup = types.InlineKeyboardMarkup()
+    btn_yes = types.InlineKeyboardButton('Да', callback_data='judge_enter')
+    btn_no = types.InlineKeyboardButton('Нет', callback_data='not_judge')
+    markup.row(btn_no, btn_yes)
+    return markup
+
+
+def add_judge(status, name):
+    con = sqlite3.connect('Judges.db')
+    cur = con.cursor()
+    result = cur.execute(f"""SELECT Name, Quality from Judges WHERE Name = ?""", (name, )).fetchall()
+    if result:
+        note = f'Данный пользователь уже зарегистрирован как судья {result[0][1]}'
+    else:
+        cur.execute(f"""INSERT INTO Judges(Name, Quality) VALUES('{name}', '{status}')""").fetchall()
+        note = f'Судья {status} зарегистрирован'
+    con.commit()
+    con.close()
+    return note
+
+
+def judge_status_markup(message):
+    markup = types.InlineKeyboardMarkup()
+    btn_E1 = types.InlineKeyboardButton('E1', callback_data='E1')
+    btn_E2 = types.InlineKeyboardButton('E2', callback_data='E2')
+    btn_E3 = types.InlineKeyboardButton('E3', callback_data='E3')
+    btn_E4 = types.InlineKeyboardButton('E4', callback_data='E4')
+    btn_A1 = types.InlineKeyboardButton('A1', callback_data='A1')
+    btn_A2 = types.InlineKeyboardButton('A2', callback_data='A2')
+    btn_A3 = types.InlineKeyboardButton('A3', callback_data='A3')
+    btn_A4 = types.InlineKeyboardButton('A4', callback_data='A4')
+    btn_DA1 = types.InlineKeyboardButton('DA1', callback_data='DA1')
+    btn_DA2 = types.InlineKeyboardButton('DA2', callback_data='DA2')
+    btn_DB1 = types.InlineKeyboardButton('DB1', callback_data='DB1')
+    btn_DB2 = types.InlineKeyboardButton('DB2', callback_data='DB2')
+    btn_main = types.InlineKeyboardButton('Главный_судья', callback_data='Главный_судья')
+    btn_secretary = types.InlineKeyboardButton('Главный_секретарь', callback_data='Главный_секретарь')
+    btn_back = types.InlineKeyboardButton('Назад', callback_data='Перепутал')
+    markup.row(btn_E1, btn_E2, btn_E3, btn_E4)
+    markup.row(btn_A1, btn_A2, btn_A3, btn_A4)
+    markup.row(btn_DB1, btn_DB2)
+    markup.row(btn_DA1, btn_DA2)
+    markup.row(btn_main)
+    markup.row(btn_secretary)
+    markup.row(btn_back)
+    return markup
+
+
 def make_main_markup(message):
-    global ADMIN_STATUS
+    global ADMIN_STATUS, JUDGE_STATUS
     name, id = message.from_user.username, message.chat.id
     if name == 'Uniade_bot':
         name = message.chat.username
-    ADMIN_STATUS = add_user(name, id)
+    ADMIN_STATUS = add_user(name, id)[0]
+    JUDGE_STATUS = add_user(name, id)[1]
     markup = types.InlineKeyboardMarkup()
-    #btn1 = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
     #btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
     #markup.row(btn1, btn2)
     #btn3 = types.InlineKeyboardButton('Музыка', callback_data='music')
@@ -584,7 +664,11 @@ def make_main_markup(message):
         # Временная кнопка
         btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
         markup.row(btn_for_admin4)
-
+        btn_coffee = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
+        markup.row(btn_coffee)
+    elif JUDGE_STATUS:
+        btn_coffee = types.InlineKeyboardButton('Напитки', callback_data='buy_drink')
+        markup.row(btn_coffee)
     return markup
 
 

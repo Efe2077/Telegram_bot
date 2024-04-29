@@ -20,18 +20,30 @@ def add_user(user_name, user_id):
 
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
-    result = cur.execute(f"""SELECT Name FROM Admins WHERE Name = ?""",
+    result1 = cur.execute(f"""SELECT Name FROM Admins WHERE Name = ?""",
                          (user_name, )).fetchall()
 
     con.commit()
     con.close()
 
-    if result:
+    con = sqlite3.connect('Judges.db')
+    cur = con.cursor()
+    result2 = cur.execute(f"""SELECT Name FROM Judges WHERE Name = ?""",
+                          (user_name,)).fetchall()
+
+    con.commit()
+    con.close()
+
+    if result1:
         ADMIN = True
     else:
         ADMIN = False
+    if result2:
+        JUDGE = True
+    else:
+        JUDGE = False
 
-    return ADMIN
+    return ADMIN, JUDGE
 
 
 def add_admin(your_name, admin_name):
