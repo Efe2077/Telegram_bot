@@ -9,7 +9,7 @@ from telebot import types
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
-from add_new import check_admin_status, add_admin, delete_your_admins, add_user
+from add_new import check_admin_status, add_admin, delete_your_admins, add_user, ladmins
 from for_yandex_disk import download_file_to_club
 from for_db_tasks import insert_into_db_data, get_data_from_column
 
@@ -44,6 +44,7 @@ def get_clubs():
 
 consult = show_questions()
 CLUB = get_clubs()
+admin_list = []
 
 
 def start_markup():
@@ -292,10 +293,7 @@ def callback_message(callback):
             # bot.send_photo(callback.message.chat.id, file)
             bot.send_message(callback.message.chat.id,
                              'Далее нажмите "Загрузить фото"')
-            # ret(callback)
-        # elif callback.data == 'qw_12':
-        #     bot.send_message(callback.message.chat.id, 'ответ 10')
-        #     ret(callback)
+
         elif callback.data == 'qw_quit':
             bot.edit_message_text(f'Вы можете выполнить такие функции:',
                                   reply_markup=make_main_markup(callback.message),
@@ -477,6 +475,9 @@ def inp_question(message):
     question_from_user = message.text
     bot.send_message(message.chat.id, f"Ваш вопрос:\n{question_from_user}", reply_markup=btn_for_exit())
     send_questions(message.chat.id, question_from_user)
+    admin_list = ladmins()
+    for i in admin_list:
+        bot.send_message(int(i), 'Новый вопрос от пользователя!!!')
 
 
 def answer(message):
@@ -625,6 +626,7 @@ def btn_for_exit():
     markup.add(btn2)
 
     return markup
+
 
 if __name__ == '__main__':
     bot.polling(none_stop=True)

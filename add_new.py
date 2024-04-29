@@ -116,3 +116,17 @@ def delete_your_admins(your_name, name):
     con.close()
 
     return note
+
+
+# ДЗ
+# Сделать круто!!!!!!!!!!!!
+
+def ladmins():
+    con = sqlite3.connect('Admins.db')
+    cur = con.cursor()
+    result0 = cur.execute(f"""SELECT Name FROM Admins""").fetchall()
+    con = sqlite3.connect('Users.db')
+    cur = con.cursor()
+    result1 = cur.execute(f"""SELECT ID FROM Users WHERE Name IN ('EfeFe4', 'di_petrin', 'Dinamit6663_1', 'Tester', 'bgalkin')""").fetchall()
+    result2 = [x[0] for x in result1]
+    return result2
