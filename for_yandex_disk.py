@@ -3,7 +3,7 @@ import yadisk
 
 WHOLE_CLUBS = []
 
-Y = yadisk.YaDisk(token='y0_AgAAAABgt50kAAueLgAAAAEB5UX6AADCTODpCFZF4Y0MpRy-WEYGXMin8Q')
+Y = yadisk.YaDisk(token='y0_AgAAAABgV7_VAAusqQAAAAEC5BF1AADNGfgUuTpOdIBnMDbVLup8w0whnQ')
 
 for el in Y.listdir('/'):
     WHOLE_CLUBS.append(el['name'])

@@ -16,7 +16,7 @@ from for_db_tasks import insert_into_db_data, get_data_from_column
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
 # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - Эфе
 # 7072278948:AAHULSz4lWo-FADGtYPvT8zvug3RpySHIFA - Дениса
-bot = telebot.TeleBot('7072278948:AAHULSz4lWo-FADGtYPvT8zvug3RpySHIFA')
+bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
 
 
 GREETINGS = ['Привет', 'Приветствую вас',
