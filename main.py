@@ -377,6 +377,10 @@ def send_audio_into_folder(message):
 
 
 def inp_folder(message):
+    if message.text == 'Назад':
+        bot.delete_message(message.chat.id, message.message_id - 1)
+        admin(message)
+        return 0
     text = message.text
     text = text.capitalize()
     insert_into_db_data(text, 'Fio', message.chat.id)
