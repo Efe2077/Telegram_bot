@@ -126,8 +126,12 @@ def ladmins():
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
     result0 = cur.execute(f"""SELECT Name FROM Admins""").fetchall()
+    a = [i[0] for i in result0]
+    t = '('
+    t += f'{a}'[1:-1]
+    t += ')'
     con = sqlite3.connect('Users.db')
     cur = con.cursor()
-    result1 = cur.execute(f"""SELECT ID FROM Users WHERE Name IN ('EfeFe4', 'di_petrin', 'Dinamit6663_1', 'Tester', 'bgalkin')""").fetchall()
+    result1 = cur.execute(f"""SELECT ID FROM Users WHERE Name IN {t}""").fetchall()
     result2 = [x[0] for x in result1]
     return result2
