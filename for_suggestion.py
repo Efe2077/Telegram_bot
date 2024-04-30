@@ -48,14 +48,39 @@ def show_suggestion():
     list_of_text = []
 
     for num, el in enumerate(result):
-        list_of_text.append((num + 1, el[0]))
+        list_of_text.append(el[0])
 
-    result = cur.execute(f"""SELECT photo FROM Users WHERE photo != 'None' """).fetchall()
-    list_of_photo = []
+    result = cur.execute(f"""SELECT photo, text FROM Users WHERE photo != 'None' """).fetchall()
+    e = {}
+    q = 0
+    for i in result:
+        q += 1
+        w = 'пост №' + str(q)
+        e[w] = [i[0], i[1]]
+    return e
 
-    for num, el in enumerate(result):
-        list_of_photo.append((num + 1, el[0]))
+
+def delete_suggestions(photo, text):
+    con = sqlite3.connect('Users.db')
+    cur = con.cursor()
+    cur.execute(f"""UPDATE Users SET Photo = 'None' WHERE Photo = '{photo}'""").fetchall()
+    cur.execute(f"""UPDATE Users SET text = 'None' WHERE text = '{text}'""").fetchall()
     con.commit()
     con.close()
 
-    return list_of_text, list_of_photo
+
+def get_id_from_suggestion(text):
+    if text != 'None':
+        con = sqlite3.connect('Users.db')
+        cur = con.cursor()
+        result = cur.execute(f"""SELECT Id FROM Users WHERE photo == '{text}' """).fetchall()
+
+        con.commit()
+        con.close()
+
+        print(result)
+
+        if result:
+            return result[0][0]
+        else:
+            return 'На данный вопрос уже ответили'

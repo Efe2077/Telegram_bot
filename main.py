@@ -1,3 +1,5 @@
+import os
+
 from lxml import etree
 
 import telebot
@@ -6,7 +8,7 @@ import xlsxwriter
 import random
 import sqlite3
 from telebot import types
-from for_suggestion import send_suggestion, send_suggestion_text, show_suggestion
+from for_suggestion import send_suggestion, send_suggestion_text, show_suggestion, get_id_from_suggestion, delete_suggestions
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
@@ -33,7 +35,9 @@ new_text = None
 USER_NAME = None
 quest = None
 printed_work = [None, None]
+printed_sug = [None, None, None]
 consult = show_questions()
+consult_sug = show_suggestion()
 admin_list = list()
 
 
@@ -171,6 +175,16 @@ def callback_message(callback):
                 printed_work[0] = consult[int(callback.data) - 1][1]
                 bot.register_next_step_handler(callback.message, inp_answer)
 
+        if [i for i in consult_sug if callback.data == i]:
+            global printed_sug
+            print(consult_sug[callback.data])
+            command = 'answer_to_suggestion'
+            bot.send_message(callback.message.chat.id, f"Вы выбрали '{callback.data}'")
+            photo = open(consult_sug[callback.data][0] + '.jpg', 'rb')
+            bot.send_photo(callback.message.chat.id, photo, consult_sug[callback.data][1])
+            printed_sug[0] = consult_sug[callback.data][0]
+            printed_sug[2] = callback.data
+            bot.register_next_step_handler(callback.message, inp_answer)
         # Временная кнопка
         elif callback.data == 'show_count_of_users':
             count_of_users(callback.message)
@@ -334,8 +348,8 @@ def func(message):
             # bot.send_message(admins[0], f"Новое фото от пользователя {user_id}")
             admin(message)
         elif command == 'answer_to_suggestion':
-            answer(message)
-            send_answer_from_admin(get_id_from_question(printed_work[0]), printed_work[1])
+            answer_sug(message)
+            send_answer_from_admin_sug(get_id_from_suggestion(printed_sug[0]), printed_sug[1])
             admin(message)
     elif message.text == "❌ Нет":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -373,11 +387,9 @@ def post_photo(message):
 
 
 def inp_suggestion(message):
-    print(message)
     file_id = message.photo[-1].file_id
     photo = message.photo[-1]
     new_txt = message.caption
-    print(new_txt)
     send_suggestion_text(message.chat.id, new_txt)
     send_suggestion(message.chat.id, file_id)
     file_info = bot.get_file(photo.file_id)
@@ -385,20 +397,16 @@ def inp_suggestion(message):
     save_path = file_id + '.jpg'
     with open(save_path, 'wb') as new_file:
         new_file.write(downloaded_file)
-    '''
-    ladmins()
-    for i in admin_list:
-        bot.send_message(int(i), photo)
-    '''
-    #bot.send_photo('1093751888', downloaded_file)
 
 
 def show_suggestion_from_users(message):
+    global consult_sug
     markup = types.InlineKeyboardMarkup()
-    consult = show_suggestion()
-    for i in consult[0]:
-        print(i[0])
-        markup.add(types.InlineKeyboardButton(f'{i[1]}', callback_data=i[1]))
+    consult_sug = show_suggestion()
+    print(consult_sug)
+    q = 0
+    for i in consult_sug:
+        markup.add(types.InlineKeyboardButton(i, callback_data=i))
     bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
 
 
@@ -529,6 +537,13 @@ def answer(message):
     printed_work[1] = text
 
 
+def answer_sug(message):
+    global printed_sug
+    text = new_text
+    bot.send_message(message.chat.id, f'Ваш ответ: {text}')
+    printed_sug[1] = text
+    print(printed_sug)
+
 def grade(message):
     try:
         b = message.text
@@ -559,6 +574,15 @@ def show_questions_from_users(message):
 def send_answer_from_admin(id_of_user, text):
     bot.send_message(id_of_user, f'Ответ от админа: {text}')
     delete_questions(printed_work[0])
+
+def send_answer_from_admin_sug(id_of_user, text):
+    q = printed_sug[2]
+    photo = open(consult_sug[q][0] + '.jpg', 'rb')
+    bot.send_photo(id_of_user, photo, consult_sug[q][1])
+    bot.send_message(id_of_user, f'Ответ от админа: {text}')
+    delete_suggestions(consult_sug[q][0], consult_sug[q][1])
+    photo.close()
+    os.remove(consult_sug[q][0] + '.jpg')
 
 
 def table(message):
