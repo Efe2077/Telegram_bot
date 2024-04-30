@@ -2,7 +2,9 @@ from lxml import etree
 
 import telebot
 import requests
+# для получения данных из API
 import xlsxwriter
+# для записи данных о пользователях в .xlsx - удобный для всех версий вариант представления инф-ции
 import os
 import shutil
 from telebot import types
@@ -23,6 +25,7 @@ GREETINGS = ['Привет', 'Приветствую вас',
              'Здравствуйте', 'Добрый день',
              'Салют', 'Хай', 'Здравия желаю'
              ]
+# Мы сделали вариативные приветствия XD
 
 GOODBYES = ['До свидания', 'Всего хорошего',
             'Всего доброго', 'До встречи',
@@ -42,6 +45,8 @@ def get_clubs():
 
     return list(p)
 
+# Достаем клубы-участники соревнований из API, чтобы обрашаться к папкам в Я.Диске
+
 
 consult = show_questions()
 CLUB = get_clubs()
@@ -56,6 +61,7 @@ def start_markup():
     markup.add(link_keyboard1, link_keyboard2, check_keyboard)
 
     return markup
+# Проверка на подписку на тг-каналы проекта - маркап из самих каналов и кнопки "проверить"
 
 
 @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
@@ -72,11 +78,13 @@ def start(message):
 
     if check(message, message.chat.id) and check_channels_start(message):
         admin(message)
+#команда "/start": приветствие, проверка подписки и в перспективе - авторизация для раздельных лк
 
 
 def check(message, chat_id):
     st = bot.get_chat_member(chat_id, user_id=message.chat.id).status
     return st in ["creator", "administrator", "member"]
+# бот, как админ, проверяет наличие статуса в ТГ-каналах
 
 
 def check_channels_start(message):
@@ -86,9 +94,11 @@ def check_channels_start(message):
         markup.add(admin(message))
     else:
         bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
+#рекурсивный маркап - до бесконечности, на протяжении всего бота проверяет подписки. Если отпишешься - выдается
 
 
 def check_channels(message):
+
     if check(message, "-1001649523664") and check(message, '-1001729713697'):
         return True
     else:
@@ -102,11 +112,13 @@ def admin(message):
     markup = make_main_markup(message)
 
     bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
+# функция вызова главного меню - всему голова
 
 
 @bot.message_handler(commands=['bye', 'end', 'пока'])
 def bye(message):
     bot.send_message(message.chat.id, choice(GOODBYES))
+#функция-пасхалка
 
 
 @bot.callback_query_handler(func=lambda callback: True)
@@ -121,15 +133,19 @@ def callback_message(callback):
                              "Напишите 'Имя пользователя в телеграмме' вашего нового админа",
                              reply_markup=btn_for_exit()
                              )
-
+        # функция добавления нового админа
+        # бот всегда меняет главное меню на функцию во избежание ошибок и для визуального удобства
+        # для выхода в главное меню (далее: ГМ) в клавиатуре создается кнопка "В главное меню"/"Назад"
             file = open('data/telegram_username.jpg', 'rb')
             bot.send_photo(callback.message.chat.id, file)
             insert_into_db_data('add_admin', 'Command', id_of_user)
             bot.register_next_step_handler(callback.message, inp_name)
+            # отправка в функцию ввода имени
         elif callback.data == 'delete_admin':
             bot.delete_message(callback.message.chat.id, callback.message.message_id)
             insert_into_db_data('delete_admin', 'Command', id_of_user)
             del_admin(callback.message)
+            # достаем id обратившегося к функции админа (чтобы понять кого он может удаличь) и запускаем функцию
         elif callback.data == 'our_social_networks':
             bot.send_message(callback.message.chat.id, 'Вы уже подписаны на наши каналы в Телеграмм'
                                                        ' и можете узнать многое там')
@@ -141,16 +157,20 @@ def callback_message(callback):
             bot.reply_to(callback.message,
                          'Но кроме этого, советуем подписаться на наш паблик ВК и посмотреть видео о нас',
                          reply_markup=markup)
+            # здесь даже без функций - сразу выходит плитка с ссылками
         elif callback.data == 'music':
             insert_into_db_data('send_file_to_folder', 'Command', id_of_user)
             bot.edit_message_text(f'Выберете папку:',
                                   reply_markup=show_club(),
                                   chat_id=callback.message.chat.id,
                                   message_id=callback.message.message_id)
+        # отправка музыки на Я.Диск, замена плитки ГМ на плитку с выбором папок для добавления музыки
+
         # elif callback.data == 'buy_drink':
         #     bot.send_message(callback.message.chat.id, "Сделайте заказ")
         #     insert_into_db_data('drink', 'Command', id_of_user)
         #     bot.register_next_step_handler(callback.message, buy_drink)
+        # функция напитков - перспектива дальшнейшего развития бота (+ к этому же относиться авторизация)
         elif callback.data == 'F_A_Q':
             bot.edit_message_text(f'Вопросы:',
                                   reply_markup=questions(),
