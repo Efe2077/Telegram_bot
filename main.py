@@ -195,7 +195,7 @@ def callback_message(callback):
             bot.send_photo(callback.message.chat.id, photo, show_suggestion()[callback.data][1])
             bot.send_message(callback.message.chat.id, 'Напишите ответ')
             insert_into_db_data(callback.data, 'printed_sug_2', callback.message.chat.id)
-            bot.register_next_step_handler(callback.message, get_and_send)
+            bot.register_next_step_handler(callback.message, get_and_send, callback.data)
 
         elif callback.data == 'show_count_of_users':
             c_of_users = count_of_users()
@@ -540,10 +540,12 @@ def send_answer_from_admin_sug(id_of_user, text, id_of_sender):
     delete_suggestions(q)
 
 
-def get_and_send(message):
+def get_and_send(message, q):
     text = message.text
-    id_of_pa = get_data_from_column('text', message.chat.id)
-    send_answer_from_admin_sug(get_id_from_suggestion(id_of_pa), text, message.chat.id)
+    id_of_pa = get_id_from_suggestion('text')
+    print(q)
+    print(get_id_from_suggestion(show_suggestion()[q][0]))
+    send_answer_from_admin_sug(get_id_from_suggestion(show_suggestion()[q][0]), text, message.chat.id)
 
 
 # Выводит кнопки с названием Турниров
