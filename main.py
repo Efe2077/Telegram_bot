@@ -7,12 +7,13 @@ from for_questions import send_questions, show_questions, get_id_from_question, 
 from add_new import check_admin_status, add_admin, delete_your_admins, add_user, ladmins
 from for_yandex_disk import download_file_to_club
 from for_file_and_req import slim_shady, count_of_users, grading, make_new_folder_from_user, get_clubs
+from for_suggestion import send_suggestion, send_suggestion_text, show_suggestion, get_id_from_suggestion, delete_suggestions
 from for_db_tasks import insert_into_db_data, get_data_from_column
 
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
 # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - Эфе
 # 7072278948:AAHULSz4lWo-FADGtYPvT8zvug3RpySHIFA - Дениса
-bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
+bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
 
 GREETINGS = ['Привет', 'Приветствую вас',
              'Здравствуйте', 'Добрый день',
@@ -25,6 +26,7 @@ GOODBYES = ['До свидания', 'Всего хорошего',
             ]
 
 consult = show_questions()
+consult_sug = show_suggestion()
 CLUB = get_clubs()
 
 
@@ -370,6 +372,34 @@ def send_audio_into_folder(message):
         else:
             bot.send_message(message.chat.id, 'Файл успешно прикреплен', reply_markup=btn_for_exit())
             insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
+
+
+def inp_suggestion_text(message):
+    file_id = message.text
+    send_suggestion_text(message.chat.id, file_id)
+
+
+def inp_suggestion(message):
+    file_id = message.photo[-1].file_id
+    photo = message.photo[-1]
+    new_txt = message.caption
+    send_suggestion_text(message.chat.id, new_txt)
+    send_suggestion(message.chat.id, file_id)
+    file_info = bot.get_file(photo.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    save_path = file_id + '.jpg'
+    with open(save_path, 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+
+def show_suggestion_from_users(message):
+    global consult_sug
+    markup = types.InlineKeyboardMarkup()
+    consult_sug = show_suggestion()
+    print(consult_sug)
+    for i in consult_sug:
+        markup.add(types.InlineKeyboardButton(i, callback_data=i))
+    bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
 
 
 # Ввод фамилии и имени пользователя
