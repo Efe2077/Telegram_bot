@@ -58,7 +58,7 @@ def start(message):
 
     if check(message, message.chat.id) and check_channels_start(message):
         admin(message)
-#команда "/start": приветствие, проверка подписки и в перспективе - авторизация для раздельных лк
+# команда "/start": приветствие, проверка подписки и в перспективе - авторизация для раздельных лк
 
 
 def check(message, chat_id):
@@ -74,7 +74,7 @@ def check_channels_start(message):
         markup.add(admin(message))
     else:
         bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
-#рекурсивный маркап - до бесконечности, на протяжении всего бота проверяет подписки. Если отпишешься - выдается
+# рекурсивный маркап - до бесконечности, на протяжении всего бота проверяет подписки. Если отпишешься - выдается
 
 
 def check_channels(message):
@@ -98,7 +98,7 @@ def admin(message):
 @bot.message_handler(commands=['bye', 'end', 'пока'])
 def bye(message):
     bot.send_message(message.chat.id, choice(GOODBYES))
-#функция-пасхалка
+# функция-пасхалка
 
 
 @bot.callback_query_handler(func=lambda callback: True)
