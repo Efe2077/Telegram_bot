@@ -1,5 +1,6 @@
 import telebot
 import shutil
+import os
 from telebot import types
 from random import choice
 from telebot.types import ReplyKeyboardRemove
@@ -13,7 +14,7 @@ from for_db_tasks import insert_into_db_data, get_data_from_column
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
 # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - Эфе
 # 7072278948:AAHULSz4lWo-FADGtYPvT8zvug3RpySHIFA - Дениса
-bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
+bot = telebot.TeleBot('6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k')
 
 GREETINGS = ['Привет', 'Приветствую вас',
              'Здравствуйте', 'Добрый день',
@@ -26,7 +27,6 @@ GOODBYES = ['До свидания', 'Всего хорошего',
             ]
 
 consult = show_questions()
-consult_sug = show_suggestion()
 CLUB = get_clubs()
 
 
@@ -110,6 +110,11 @@ def callback_message(callback):
             bot.delete_message(callback.message.chat.id, callback.message.message_id)
             insert_into_db_data('delete_admin', 'Command', id_of_user)
             del_admin(callback.message)
+        elif callback.data == 'suggestion':
+            bot.send_message(callback.message.chat.id, "фото и текст в одном сообщении")
+            bot.register_next_step_handler(callback.message, inp_suggestion)
+        elif callback.data == 'show_suggestion':
+            show_suggestion_from_users(callback.message)
         elif callback.data == 'our_social_networks':
             bot.send_message(callback.message.chat.id, 'Вы уже подписаны на наши каналы в Телеграмм'
                                                        ' и можете узнать многое там')
@@ -178,6 +183,16 @@ def callback_message(callback):
                 bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
                 insert_into_db_data(consult[int(callback.data) - 1][1], 'Printed_work', id_of_user)
                 bot.register_next_step_handler(callback.message, answer)
+
+        elif [i for i in show_suggestion() if callback.data == i]:
+            print(callback.data)
+            insert_into_db_data('answer_to_suggestion', 'Command', callback.message.chat.id)
+            bot.send_message(callback.message.chat.id, f"Вы выбрали '{callback.data}'")
+            photo = open(show_suggestion()[callback.data][0] + '.jpg', 'rb')
+            bot.send_photo(callback.message.chat.id, photo, show_suggestion()[callback.data][1])
+            bot.send_message(callback.message.chat.id, 'Напишите ответ')
+            insert_into_db_data(callback.data, 'printed_sug_2', callback.message.chat.id)
+            bot.register_next_step_handler(callback.message, get_and_send)
 
         elif callback.data == 'show_count_of_users':
             c_of_users = count_of_users()
@@ -374,34 +389,6 @@ def send_audio_into_folder(message):
             insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
 
 
-def inp_suggestion_text(message):
-    file_id = message.text
-    send_suggestion_text(message.chat.id, file_id)
-
-
-def inp_suggestion(message):
-    file_id = message.photo[-1].file_id
-    photo = message.photo[-1]
-    new_txt = message.caption
-    send_suggestion_text(message.chat.id, new_txt)
-    send_suggestion(message.chat.id, file_id)
-    file_info = bot.get_file(photo.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    save_path = file_id + '.jpg'
-    with open(save_path, 'wb') as new_file:
-        new_file.write(downloaded_file)
-
-
-def show_suggestion_from_users(message):
-    global consult_sug
-    markup = types.InlineKeyboardMarkup()
-    consult_sug = show_suggestion()
-    print(consult_sug)
-    for i in consult_sug:
-        markup.add(types.InlineKeyboardButton(i, callback_data=i))
-    bot.send_message(message.chat.id, 'Вопросы:', reply_markup=markup)
-
-
 # Ввод фамилии и имени пользователя
 def inp_folder(message):
     if message.text == 'В главное меню':
@@ -511,6 +498,44 @@ def send_answer_from_admin(message, id_of_user, text):
     admin(message)
 
 
+def inp_suggestion(message):
+    file_id = message.photo[-1].file_id
+    photo = message.photo[-1]
+    new_txt = message.caption
+    send_suggestion_text(message.chat.id, new_txt)
+    send_suggestion(message.chat.id, file_id)
+    file_info = bot.get_file(photo.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    save_path = file_id + '.jpg'
+    with open(save_path, 'wb') as new_file:
+        new_file.write(downloaded_file)
+    bot.send_message(message.chat.id, 'Сообщение отправлено')
+
+
+def show_suggestion_from_users(message):
+    markup = types.InlineKeyboardMarkup()
+    consult_sug = show_suggestion()
+    for i in consult_sug:
+        markup.add(types.InlineKeyboardButton(i, callback_data=i))
+    bot.send_message(message.chat.id, 'Предложения:', reply_markup=markup)
+
+
+def send_answer_from_admin_sug(id_of_user, text, id_of_sender):
+    q = get_data_from_column('printed_sug_2', id_of_sender)
+    photo = open(show_suggestion()[q][0] + '.jpg', 'rb')
+    bot.send_photo(id_of_user, photo, show_suggestion()[q][1])
+    bot.send_message(id_of_user, f'Ответ от админа: {text}')
+    photo.close()
+    os.remove(show_suggestion()[q][0] + '.jpg')
+    delete_suggestions(q)
+
+
+def get_and_send(message):
+    text = message.text
+    id_of_pa = get_data_from_column('text', message.chat.id)
+    send_answer_from_admin_sug(get_id_from_suggestion(id_of_pa), text, message.chat.id)
+
+
 # Выводит кнопки с названием Турниров
 def change_on_table():
     markup = types.InlineKeyboardMarkup()
@@ -530,6 +555,8 @@ def make_main_markup(message):
     add_user(name, name2, id_of_user)  # Добавление нового пользователя
 
     markup = types.InlineKeyboardMarkup()
+    btn2 = types.InlineKeyboardButton('Предложка', callback_data='suggestion')
+    markup.row(btn2)
     btn3 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
     markup.row(btn3)
     btn4 = types.InlineKeyboardButton('Музыка', callback_data='music')
@@ -554,6 +581,8 @@ def make_main_markup(message):
         markup.row(btn_for_admin3)
         btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
         markup.row(btn_for_admin4)
+        btn_for_admin5 = types.InlineKeyboardButton('приемка', callback_data='show_suggestion')
+        markup.row(btn_for_admin5)
 
     return markup
 
