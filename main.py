@@ -111,10 +111,14 @@ def callback_message(callback):
             insert_into_db_data('delete_admin', 'Command', id_of_user)
             del_admin(callback.message)
         elif callback.data == 'suggestion':
-            bot.send_message(callback.message.chat.id, "фото и текст в одном сообщении")
+            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+            bot.send_message(callback.message.chat.id, 'фото и текст в одном сообщении', reply_markup=btn_for_exit())
             bot.register_next_step_handler(callback.message, inp_suggestion)
         elif callback.data == 'show_suggestion':
-            show_suggestion_from_users(callback.message)
+            bot.edit_message_text('Предложения:',
+                                  reply_markup=show_suggestion_from_users(),
+                                  chat_id=callback.message.chat.id,
+                                  message_id=callback.message.message_id)
         elif callback.data == 'our_social_networks':
             bot.send_message(callback.message.chat.id, 'Вы уже подписаны на наши каналы в Телеграмм'
                                                        ' и можете узнать многое там')
@@ -185,7 +189,6 @@ def callback_message(callback):
                 bot.register_next_step_handler(callback.message, answer)
 
         elif [i for i in show_suggestion() if callback.data == i]:
-            print(callback.data)
             insert_into_db_data('answer_to_suggestion', 'Command', callback.message.chat.id)
             bot.send_message(callback.message.chat.id, f"Вы выбрали '{callback.data}'")
             photo = open(show_suggestion()[callback.data][0] + '.jpg', 'rb')
@@ -453,7 +456,6 @@ def answer(message):
     text = message.text
     bot.send_message(message.chat.id, f'Ваш ответ: {text}')
     printed_work = get_data_from_column('Printed_work', message.chat.id)
-    print(printed_work)
     send_answer_from_admin(message, get_id_from_question(printed_work), text)
 
 
@@ -499,6 +501,10 @@ def send_answer_from_admin(message, id_of_user, text):
 
 
 def inp_suggestion(message):
+    if message.text == 'В главное меню':
+        bot.delete_message(message.chat.id, message.message_id - 1)
+        admin(message)
+        return 0
     file_id = message.photo[-1].file_id
     photo = message.photo[-1]
     new_txt = message.caption
@@ -510,14 +516,18 @@ def inp_suggestion(message):
     with open(save_path, 'wb') as new_file:
         new_file.write(downloaded_file)
     bot.send_message(message.chat.id, 'Сообщение отправлено')
+    admin(message)
 
 
-def show_suggestion_from_users(message):
+def show_suggestion_from_users():
     markup = types.InlineKeyboardMarkup()
     consult_sug = show_suggestion()
     for i in consult_sug:
         markup.add(types.InlineKeyboardButton(i, callback_data=i))
-    bot.send_message(message.chat.id, 'Предложения:', reply_markup=markup)
+    ret = types.InlineKeyboardButton(f'Выйти', callback_data='qw_quit')
+    markup.add(ret)
+
+    return markup
 
 
 def send_answer_from_admin_sug(id_of_user, text, id_of_sender):
@@ -581,7 +591,7 @@ def make_main_markup(message):
         markup.row(btn_for_admin3)
         btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
         markup.row(btn_for_admin4)
-        btn_for_admin5 = types.InlineKeyboardButton('приемка', callback_data='show_suggestion')
+        btn_for_admin5 = types.InlineKeyboardButton('Приемка', callback_data='show_suggestion')
         markup.row(btn_for_admin5)
 
     return markup

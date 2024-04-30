@@ -37,7 +37,9 @@ def show_suggestion():
     q = 0
     for i in result:
         q += 1
-        w = 'пост №' + str(q)
+        w = 'Пост №' + str(q)
+        print(i[1], w)
+        cur.execute(f"""UPDATE Users SET Printed_sug_2 = '{w}' WHERE Photo = '{i[0]}' """).fetchall()
         e[w] = [i[0], i[1]]
     return e
 
@@ -66,3 +68,6 @@ def get_id_from_suggestion(text):
             return result[0][0]
         else:
             return 'На данный вопрос уже ответили'
+
+
+show_suggestion()
