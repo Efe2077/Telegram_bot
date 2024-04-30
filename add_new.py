@@ -1,6 +1,7 @@
 import sqlite3
 
 
+# добавление пользователя в ячейку таблицы с соответствующим выводом в терминале:
 def add_user(user_name, user_name2, user_id):
     con = sqlite3.connect('Users.db')
     cur = con.cursor()
@@ -18,6 +19,7 @@ def add_user(user_name, user_name2, user_id):
     con.close()
 
 
+# Проверка статуса Админа для вывода соответствующей плитки функций:
 def check_admin_status(user_name):
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()
@@ -117,11 +119,11 @@ def delete_your_admins(your_name, name):
 
     return note
 
-
-# ДЗ
 # Сделать круто!!!!!!!!!!!!
 
-# Делал Денис
+# Делал Денис, функция возвращающая список админов:
+
+
 def ladmins():
     con = sqlite3.connect('Admins.db')
     cur = con.cursor()

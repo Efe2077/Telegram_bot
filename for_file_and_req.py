@@ -4,6 +4,7 @@ from lxml import etree
 import os
 
 
+# не верьте интернетам, функция Дена и его гениальный изменяемый API запрос, возвращает xlsx таблицу для отправки ботом:
 def slim_shady(tour):
     a, c, gen = list(), list(), list()
 
@@ -31,6 +32,7 @@ def slim_shady(tour):
     return open('test.xlsx', 'rb')
 
 
+# Тоже Дена, тоже АПИ, кол-во пользователей:
 def count_of_users():
     site = (f"https://lk.mypolechka.ru/API/"
             f"adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getUsersCount")
@@ -42,12 +44,14 @@ def count_of_users():
     return answer
 
 
+# удаление тегов сайта, пригодиться для некоторых АПИ запросов:
 def remove_html_tags(text):
     parser = etree.HTMLParser()
     tree = etree.fromstring(text, parser)
     return etree.tostring(tree, encoding='unicode', method='text')
 
 
+#Оценки из Апи, изменяемый запрос:
 def grading(text):
     try:
         a = text.split(' ')
@@ -65,6 +69,7 @@ def grading(text):
                f"Можете обратиться к организаторам"
 
 
+# Промежуточный файл с mp3 для добавления в Яндекс.Диск
 def make_new_folder_from_user(fio, name, downloaded_file):
     os.mkdir(f'data/users_files/{fio}')
 
@@ -75,6 +80,7 @@ def make_new_folder_from_user(fio, name, downloaded_file):
         new_file.close()
 
 
+# извлечение имен клубов из АПИ списком:
 def get_clubs():
     gen, p = list(), set()
 
@@ -86,3 +92,5 @@ def get_clubs():
         p.add(list(response[i].values())[11])
 
     return sorted(list(p))
+
+# АХхахахаха, тут все функции Дена, но копировал в файл Эфе, так что gitу плевать

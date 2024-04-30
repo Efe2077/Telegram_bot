@@ -19,6 +19,8 @@ def send_questions(user_id, question):
 
     con.commit()
     con.close()
+    # отправка вопросов в БД, у каждого своя ячейка, причем пользователи могут отправлять сразу несколько постов,
+    # они будут сохраняться вместе через разделитель
 
 
 def delete_questions(text):
@@ -28,6 +30,7 @@ def delete_questions(text):
 
     con.commit()
     con.close()
+    # после ответа на вопрос пользователя, он удаляется из ячейки, что и делает данная функция
 
 
 def show_questions():
@@ -43,6 +46,7 @@ def show_questions():
     con.close()
 
     return list_of_questions
+# эта функция служит для дальнейшего представления вопросов в виде плитки, она возвращает список активных вопросов
 
 
 def get_id_from_question(text):

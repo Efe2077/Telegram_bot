@@ -30,3 +30,4 @@ def check_folder(club, folder):
             Y.mkdir(f'/{club}/{folder}')
     else:
         Y.mkdir(f'/{club}/{folder}')
+# Тут добавление файлов в Яндекс.Диск

@@ -151,20 +151,24 @@ def callback_message(callback):
                                   reply_markup=questions(),
                                   chat_id=callback.message.chat.id,
                                   message_id=callback.message.message_id)
+        # функция вызова плитки с вопросами
         elif callback.data == 'grade':
             bot.delete_message(callback.message.chat.id, callback.message.message_id)
             bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:",
                              reply_markup=btn_for_exit())
             bot.register_next_step_handler(callback.message, grade)
+        # вызов функции вывода оценки из API по ФИО
         elif callback.data == 'show_questions_from_users':
             bot.edit_message_text(f'Вопросы от пользователей:',
                                   reply_markup=show_questions_from_users(),
                                   chat_id=callback.message.chat.id,
                                   message_id=callback.message.message_id)
+        # вызов плитки вопросов от пользователей
         elif callback.data == 'send_questions':
             bot.delete_message(callback.message.chat.id, callback.message.message_id)
             bot.send_message(callback.message.chat.id, "Напишите вопрос", reply_markup=btn_for_exit())
             bot.register_next_step_handler(callback.message, inp_question)
+        # функция обращения от пользователя
         elif callback.data == 'video_live':
             markup = types.InlineKeyboardMarkup()
             markup.add(
@@ -179,17 +183,20 @@ def callback_message(callback):
             bot.reply_to(callback.message,
                          'Скорее читать!!!',
                          reply_markup=markup)
-
         elif callback.data in CLUB:
+        # в будущем этот общий прием данных для турниров и клубов будет разделен, так как названия
+        # клубов будут отличаться от названий турниров
             if get_data_from_column('Command', id_of_user) == 'get_table':
                 bot.delete_message(callback.message.chat.id, callback.message.message_id)
                 f1 = slim_shady(callback.data)
                 bot.send_document(callback.message.chat.id, f1, reply_markup=btn_for_exit())
+            # Создание таблицы Excel с данными заявок по конкретному турниру - функция для админов
             elif get_data_from_column('Command', id_of_user) == 'send_file_to_folder':
                 insert_into_db_data(callback.data, 'Your_club', id_of_user)
                 bot.delete_message(callback.message.chat.id, callback.message.message_id)
                 bot.send_message(callback.message.chat.id, 'Напишите ФИО', reply_markup=btn_for_exit())
                 bot.register_next_step_handler(callback.message, inp_folder)
+            # Создание или обращение к существующей папке в Я.Диске для добавления музыки
         elif callback.data.isdigit():
             if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
                 insert_into_db_data('answer_to_question', 'Command', id_of_user)
@@ -197,17 +204,18 @@ def callback_message(callback):
                 bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
                 insert_into_db_data(consult[int(callback.data) - 1][1], 'Printed_work', id_of_user)
                 bot.register_next_step_handler(callback.message, answer)
-
+            # ответы на вопросы от пользователей
         elif callback.data == 'show_count_of_users':
             c_of_users = count_of_users()
             bot.send_message(callback.message.chat.id, c_of_users)
+            # вызов функции обращения к API сайта, а именно получения кол-ва открытых кабинетов
         elif callback.data == 'table':
             insert_into_db_data('get_table', 'Command', id_of_user)
             bot.edit_message_text(f'Выберите интересующий турнир:',
                                   reply_markup=change_on_table(),
                                   chat_id=callback.message.chat.id,
                                   message_id=callback.message.message_id)
-
+            # Создание плиток с выбором турнира, по которому выгрузить заявки и создать EXCEl
         elif callback.data == 'qw_1':
             bot.delete_message(callback.message.chat.id, callback.message.message_id)
             file = open('data/checkroom0.jpg', 'rb')
@@ -323,15 +331,17 @@ def callback_message(callback):
                                                        'именно этому харизматичному мужчине нужно сдать флешку XD')
             file = open('data/dj.jpg', 'rb')
             bot.send_photo(callback.message.chat.id, file, reply_markup=btn_for_questions())
-
+        #Прием всех вопросов из плитки вопросов и вызов соответствующих ответов
         elif callback.data == 'qw_quit':
             bot.edit_message_text(f'Вы можете выполнить такие функции:',
                                   reply_markup=make_main_markup(callback.message),
                                   chat_id=callback.message.chat.id,
                                   message_id=callback.message.message_id)
+        #выход в главное меню
 
 
 @bot.message_handler(content_types=['text'])
+# прием текстовых вводов пользователя и соответствующие функции
 def func(message):
     if message.text == "✅ Да":
         user_name = get_data_from_column('Name', message.chat.id)
@@ -363,6 +373,7 @@ def func(message):
 
 
 @bot.message_handler(content_types=['photo'])
+# прием фото, чтобы можно было через бота получить какую-то обратную связь на них
 def get_photo(message):
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton('Перейти в вк', url='https://vk.com/rg_child_league'))
@@ -370,6 +381,7 @@ def get_photo(message):
 
 
 @bot.message_handler(content_types=['audio'])
+# отправка уже непосредственно аудио на Я.Диск, с промежуточным сохранением и последующим удалением из папки проекта
 def send_audio_into_folder(message):
     if get_data_from_column('Command', message.chat.id) == 'sending_file':
         file_info = bot.get_file(message.audio.file_id)
@@ -393,7 +405,7 @@ def send_audio_into_folder(message):
             insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
 
 
-# Ввод фамилии и имени пользователя
+# Ввод фамилии и имени пользователя:
 def inp_folder(message):
     if message.text == 'В главное меню':
         bot.delete_message(message.chat.id, message.message_id - 1)
@@ -407,7 +419,7 @@ def inp_folder(message):
     bot.send_message(message.chat.id, f'Прикрепите файл с музыкой (.mp3)')
 
 
-# Ввод имени админа
+# Ввод имени админа:
 def inp_name(message):
     if message.text == 'В главное меню':
         bot.delete_message(message.chat.id, message.message_id - 1)
@@ -420,7 +432,7 @@ def inp_name(message):
     yes_or_no(message)
 
 
-# Клавиатура для подтверждения
+# Клавиатура для подтверждения:
 def yes_or_no(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
     btn1 = types.KeyboardButton('✅ Да')
@@ -429,6 +441,7 @@ def yes_or_no(message):
     bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
 
 
+#удаление админов, из тех, что админ добавил:
 def del_admin(message):
     if message.text == 'В главное меню':
         bot.delete_message(message.chat.id, message.message_id - 1)
@@ -441,6 +454,7 @@ def del_admin(message):
     bot.register_next_step_handler(message, inp_name)
 
 
+# Ввод вопросов:
 def inp_question(message):
     if message.text == 'В главное меню':
         admin(message)
@@ -451,8 +465,10 @@ def inp_question(message):
     admin_list = ladmins()
     for i in admin_list:
         bot.send_message(int(i), 'Новый вопрос от пользователя!!!')
+    # Уведомление всех админов о вопросе
 
 
+#Ответ от админа на вопросы пользователя:
 def answer(message):
     text = message.text
     bot.send_message(message.chat.id, f'Ваш ответ: {text}')
@@ -461,6 +477,7 @@ def answer(message):
     send_answer_from_admin(message, get_id_from_question(printed_work), text)
 
 
+# Плитка с выбором из папок:
 def show_club():
     markup = types.InlineKeyboardMarkup()
     for club in CLUB:
@@ -473,6 +490,7 @@ def show_club():
     return markup
 
 
+# Функция для вывода оценки:
 def grade(message):
     if message.text == 'В главное меню':
         bot.delete_message(message.chat.id, message.message_id - 1)
@@ -483,6 +501,7 @@ def grade(message):
     bot.send_message(message.chat.id, res, reply_markup=btn_for_exit())
 
 
+# вопросы от пользоваетелей (плитка):
 def show_questions_from_users():
     global consult
     markup = types.InlineKeyboardMarkup()
