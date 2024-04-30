@@ -501,51 +501,64 @@ def send_answer_from_admin(message, id_of_user, text):
 
 
 def inp_suggestion(message):
-    if message.text == 'В главное меню':
-        bot.delete_message(message.chat.id, message.message_id - 1)
+    try:
+        if message.text == 'В главное меню':
+            bot.delete_message(message.chat.id, message.message_id - 1)
+            admin(message)
+            return 0
+        file_id = message.photo[-1].file_id
+        photo = message.photo[-1]
+        new_txt = message.caption
+        send_suggestion_text(message.chat.id, new_txt)
+        send_suggestion(message.chat.id, file_id)
+        file_info = bot.get_file(photo.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        save_path = file_id + '.jpg'
+        with open(save_path, 'wb') as new_file:
+            new_file.write(downloaded_file)
+        bot.send_message(message.chat.id, 'Сообщение отправлено')
         admin(message)
-        return 0
-    file_id = message.photo[-1].file_id
-    photo = message.photo[-1]
-    new_txt = message.caption
-    send_suggestion_text(message.chat.id, new_txt)
-    send_suggestion(message.chat.id, file_id)
-    file_info = bot.get_file(photo.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    save_path = file_id + '.jpg'
-    with open(save_path, 'wb') as new_file:
-        new_file.write(downloaded_file)
-    bot.send_message(message.chat.id, 'Сообщение отправлено')
-    admin(message)
+    except Exception:
+        bot.send_message(message.chat.id, 'Похоже, Ваш формат не соответствует требуемому (фото или фото + текст)')
+        print('Похоже, формат не соответствует требуемому (фото.jpg или фото + текст)')
+        return admin(message)
 
 
 def show_suggestion_from_users():
-    markup = types.InlineKeyboardMarkup()
-    consult_sug = show_suggestion()
-    for i in consult_sug:
-        markup.add(types.InlineKeyboardButton(i, callback_data=i))
-    ret = types.InlineKeyboardButton(f'Выйти', callback_data='qw_quit')
-    markup.add(ret)
-
+    try:
+        markup = types.InlineKeyboardMarkup()
+        consult_sug = show_suggestion()
+        for i in consult_sug:
+            markup.add(types.InlineKeyboardButton(i, callback_data=i))
+        ret = types.InlineKeyboardButton(f'Выйти', callback_data='qw_quit')
+        markup.add(ret)
+    except Exception:
+        return admin()
     return markup
 
 
 def send_answer_from_admin_sug(id_of_user, text, id_of_sender):
-    q = get_data_from_column('printed_sug_2', id_of_sender)
-    photo = open(show_suggestion()[q][0] + '.jpg', 'rb')
-    bot.send_photo(id_of_user, photo, show_suggestion()[q][1])
-    bot.send_message(id_of_user, f'Ответ от админа: {text}')
-    photo.close()
-    os.remove(show_suggestion()[q][0] + '.jpg')
-    delete_suggestions(q)
+    try:
+        q = get_data_from_column('printed_sug_2', id_of_sender)
+        photo = open(show_suggestion()[q][0] + '.jpg', 'rb')
+        bot.send_photo(id_of_user, photo, show_suggestion()[q][1])
+        bot.send_message(id_of_user, f'Ответ от админа: {text}')
+        photo.close()
+        os.remove(show_suggestion()[q][0] + '.jpg')
+        delete_suggestions(q)
+    except Exception:
+        return admin(text)
 
 
 def get_and_send(message, q):
-    text = message.text
-    id_of_pa = get_id_from_suggestion('text')
-    print(q)
-    print(get_id_from_suggestion(show_suggestion()[q][0]))
-    send_answer_from_admin_sug(get_id_from_suggestion(show_suggestion()[q][0]), text, message.chat.id)
+    try:
+        text = message.text
+        id_of_pa = get_id_from_suggestion('text')
+        print(q)
+        print(get_id_from_suggestion(show_suggestion()[q][0]))
+        send_answer_from_admin_sug(get_id_from_suggestion(show_suggestion()[q][0]), text, message.chat.id)
+    except Exception:
+        return admin(message)
 
 
 # Выводит кнопки с названием Турниров
