@@ -51,7 +51,7 @@ def remove_html_tags(text):
     return etree.tostring(tree, encoding='unicode', method='text')
 
 
-#Оценки из Апи, изменяемый запрос:
+# Оценки индивидуальные из Апи с разделение по видам через обращение к спец. атрибутам, изменяемый запрос:
 def ind_grading(text):
     try:
         a = text.split(' ')
@@ -82,6 +82,7 @@ def ind_grading(text):
                f"Можете обратиться к организаторам"
 
 
+# Оценки групповые из Апи с разделение по видам через обращение к спец. атрибутам, изменяемый запрос:
 def group_grading(text):
     try:
         group_name = text

@@ -6,6 +6,7 @@ import xlsxwriter
 import os
 import shutil
 from telebot import types
+from datetime import datetime
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
@@ -301,7 +302,6 @@ def callback_message(callback):
             bot.send_message(callback.message.chat.id,
                              'Когда она будет принята, Вы сможете увидеть долгожданные выступления',
                              reply_markup=btn_for_questions())
-
         elif callback.data == 'qw_9':
             bot.delete_message(callback.message.chat.id, callback.message.message_id)
             file = open('data/online1.png', 'rb')
@@ -468,7 +468,8 @@ def inp_question(message):
         return 0
     question_from_user = message.text
     bot.send_message(message.chat.id, f"Ваш вопрос:\n{question_from_user}", reply_markup=btn_for_exit())
-    send_questions(message.chat.id, question_from_user)
+    now = datetime.now().strftime('%m-%d %H:%M')
+    send_questions(message.chat.id, str(now) + ': ' + question_from_user)
     admin_list = ladmins()
     for i in admin_list:
         bot.send_message(int(i), 'Новый вопрос от пользователя!!!')
