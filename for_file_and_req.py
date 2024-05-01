@@ -52,21 +52,64 @@ def remove_html_tags(text):
 
 
 #Оценки из Апи, изменяемый запрос:
-def grading(text):
+def ind_grading(text):
     try:
         a = text.split(' ')
         name, last_name = a[1], a[0]
 
-        site = (f"https://lk.mypolechka.ru/API/"
-                f"adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getScore&lastname={last_name}&name={name}")
+        site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getScore&lastname={last_name}&name={name}"
 
         response = requests.get(site).json()
-
-        return response[0]['sum_score']
+        sum_score = response[0]['sum_score']
+        ind_text = ''
+        ind_text += f'{last_name} {name} - оценки:\n\n'
+        in_var_n = 0
+        if response[0]['item'] == '0':
+            in_var_n = 1
+            score = response[0]['score']
+            ind_text += f'БП: {score}\n'
+        for i in range(in_var_n, len(response)):
+            score = response[i]['score']
+            if in_var_n == 1:
+                ind_text += f'{i} вид: {score}\n'
+            else:
+                ind_text += f'{i + 1} вид: {score}\n'
+        ind_text += f'\nСуммарная оценка: {sum_score}'
+        return ind_text
     except Exception:
         print(f"Неправильный ввод: {text}")
         return f"Неправильный ввод: {text} \nВозможно данный участник ёще не участвовал \n"\
                f"Можете обратиться к организаторам"
+
+
+def group_grading(text):
+    try:
+        group_name = text
+
+        site = f"https://lk.mypolechka.ru/API/adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getScore&lastname={group_name}"
+
+        response = requests.get(site).json()
+
+        sum_score = response[0]['sum_score']
+        group_text = ''
+        group_text += f'{group_name} - оценки:\n\n'
+        g_var_n = 0
+        if response[0]['item'] == '0':
+            g_var_n = 1
+            score = response[0]['score']
+            group_text += f'БП: {score}\n'
+        for i in range(g_var_n, len(response)):
+            score = response[i]['score']
+            if g_var_n == 1:
+                group_text += f'{i} вид: {score}\n'
+            else:
+                group_text += f'{i + 1} вид: {score}\n'
+        group_text += f'\nСуммарная оценка: {sum_score}'
+        print(f"Успешный ввод: {group_name}")
+        return group_text
+    except Exception:
+        print(f"Неправильный ввод: {group_name}")
+        return f"Неправильный ввод: {group_name}"
 
 
 # Промежуточный файл с mp3 для добавления в Яндекс.Диск

@@ -11,7 +11,7 @@ from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
 from add_new import check_admin_status, add_admin, delete_your_admins, add_user, ladmins
 from for_yandex_disk import download_file_to_club
-from for_file_and_req import slim_shady, count_of_users, grading, make_new_folder_from_user, get_clubs
+from for_file_and_req import slim_shady, count_of_users, ind_grading, group_grading, make_new_folder_from_user, get_clubs
 from for_db_tasks import insert_into_db_data, get_data_from_column
 
 # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
@@ -152,11 +152,18 @@ def callback_message(callback):
                                   chat_id=callback.message.chat.id,
                                   message_id=callback.message.message_id)
         # функция вызова плитки с вопросами
-        elif callback.data == 'grade':
-            bot.delete_message(callback.message.chat.id, callback.message.message_id)
-            bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:",
-                             reply_markup=btn_for_exit())
-            bot.register_next_step_handler(callback.message, grade)
+        # elif callback.data == 'grade':
+        #     bot.delete_message(callback.message.chat.id, callback.message.message_id)
+        #     bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:",
+        #                      reply_markup=btn_for_exit())
+        #     bot.register_next_step_handler(callback.message, grade)
+        elif callback.data == 'ind_grade':
+            bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:")
+            bot.register_next_step_handler(callback.message, ind_grade)
+        elif callback.data == 'group_grade':
+            bot.send_message(callback.message.chat.id, "Введите название команды или дуэта, "
+                                                       "оценку которого хочешь узнать:")
+            bot.register_next_step_handler(callback.message, group_grade)
         # вызов функции вывода оценки из API по ФИО
         elif callback.data == 'show_questions_from_users':
             bot.edit_message_text(f'Вопросы от пользователей:',
@@ -491,13 +498,23 @@ def show_club():
 
 
 # Функция для вывода оценки:
-def grade(message):
+def ind_grade(message):
     if message.text == 'В главное меню':
         bot.delete_message(message.chat.id, message.message_id - 1)
         admin(message)
         return 0
     text = message.text
-    res = grading(text)
+    res = ind_grading(text)
+    bot.send_message(message.chat.id, res, reply_markup=btn_for_exit())
+
+
+def group_grade(message):
+    if message.text == 'В главное меню':
+        bot.delete_message(message.chat.id, message.message_id - 1)
+        admin(message)
+        return 0
+    text = message.text
+    res = group_grading(text)
     bot.send_message(message.chat.id, res, reply_markup=btn_for_exit())
 
 
@@ -540,7 +557,9 @@ def make_main_markup(message):
     add_user(name, name2, id_of_user)  # Добавление нового пользователя
 
     markup = types.InlineKeyboardMarkup()
-    btn3 = types.InlineKeyboardButton('Оценки выступления', callback_data='grade')
+    btn2 = types.InlineKeyboardButton('Групповая оценка', callback_data='group_grade')
+    btn3 = types.InlineKeyboardButton('Индивид. оценка', callback_data='ind_grade')
+    markup.row(btn2)
     markup.row(btn3)
     btn4 = types.InlineKeyboardButton('Музыка', callback_data='music')
     markup.row(btn4)
