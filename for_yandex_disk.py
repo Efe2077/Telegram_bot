@@ -10,24 +10,30 @@ for el in Y.listdir('/'):
 
 
 def download_file_to_club(club, folder, file_name):
-    if club in WHOLE_CLUBS:
-        try:
-            check_folder(club, folder)
-            Y.upload(f'data/users_files/{folder}/{file_name}', f'{club}/{folder}/{file_name}')
-            return True
-        except Exception:
-            return False
+    try:
+        if club in WHOLE_CLUBS:
+            try:
+                check_folder(club, folder)
+                Y.upload(f'data/users_files/{folder}/{file_name}', f'{club}/{folder}/{file_name}')
+                return True
+            except Exception:
+                return False
+    except Exception:
+        print('download_file_to_club сбоит')
 
 
 def check_folder(club, folder):
-    the_inside = []
+    try:
+        the_inside = []
 
-    for elem in Y.listdir(f'/{club}'):
-        the_inside.append(elem['name'])
+        for elem in Y.listdir(f'/{club}'):
+            the_inside.append(elem['name'])
 
-    if the_inside:
-        if folder not in the_inside:
+        if the_inside:
+            if folder not in the_inside:
+                Y.mkdir(f'/{club}/{folder}')
+        else:
             Y.mkdir(f'/{club}/{folder}')
-    else:
-        Y.mkdir(f'/{club}/{folder}')
+    except Exception:
+        print('check_folder сбоит')
 # Тут добавление файлов в Яндекс.Диск

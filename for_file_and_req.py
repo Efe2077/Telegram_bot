@@ -6,30 +6,33 @@ import os
 
 # не верьте интернетам, функция Дена и его гениальный изменяемый API запрос, возвращает xlsx таблицу для отправки ботом:
 def slim_shady(tour):
-    a, c, gen = list(), list(), list()
+    try:
+        a, c, gen = list(), list(), list()
 
-    site = (f"https://lk.mypolechka.ru/API/"
-            f"adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title={tour}")
+        site = (f"https://lk.mypolechka.ru/API/"
+                f"adminAPI.php?userid=LNnZH53yTPbCv1vrRcGujfqvbZF3&funcid=getOrders&title={tour}")
 
-    response = requests.get(site).json()
+        response = requests.get(site).json()
 
-    for el in response[0].keys():
-        a.append(el)
-    gen.append(a)
+        for el in response[0].keys():
+            a.append(el)
+        gen.append(a)
 
-    for i in range(len(response)):
-        c.append(list())
-        for el in response[i].keys():
-            c[i].append(response[i][el])
-        gen.append(c[i])
+        for i in range(len(response)):
+            c.append(list())
+            for el in response[i].keys():
+                c[i].append(response[i][el])
+            gen.append(c[i])
 
-    with xlsxwriter.Workbook('test.xlsx') as workbook:
-        worksheet = workbook.add_worksheet()
+        with xlsxwriter.Workbook('test.xlsx') as workbook:
+            worksheet = workbook.add_worksheet()
 
-        for row_num, data in enumerate(gen):
-            worksheet.write_row(row_num, 0, data)
+            for row_num, data in enumerate(gen):
+                worksheet.write_row(row_num, 0, data)
 
-    return open('test.xlsx', 'rb')
+        return open('test.xlsx', 'rb')
+    except Exception:
+        print('Slim Shady сбоит')
 
 
 # Тоже Дена, тоже АПИ, кол-во пользователей:
@@ -115,13 +118,16 @@ def group_grading(text):
 
 # Промежуточный файл с mp3 для добавления в Яндекс.Диск
 def make_new_folder_from_user(fio, name, downloaded_file):
-    os.mkdir(f'data/users_files/{fio}')
+    try:
+        os.mkdir(f'data/users_files/{fio}')
 
-    src = f'data/users_files/{fio}/' + name
+        src = f'data/users_files/{fio}/' + name
 
-    with open(src, 'wb') as new_file:
-        new_file.write(downloaded_file)
-        new_file.close()
+        with open(src, 'wb') as new_file:
+            new_file.write(downloaded_file)
+            new_file.close()
+    except Exception:
+        print('make_new_folder_from_user сбоит')
 
 
 # извлечение имен клубов из АПИ списком:
