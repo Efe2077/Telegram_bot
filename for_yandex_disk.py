@@ -3,18 +3,18 @@ import yadisk
 
 WHOLE_CLUBS = []
 
-Y = yadisk.YaDisk(token='y0_AgAAAABgV7_VAAusqQAAAAEC5BF1AADNGfgUuTpOdIBnMDbVLup8w0whnQ')
+Y = yadisk.YaDisk(token='y0__xDD7pTdAhj0gzUgiuaJmhLIoLzALNJgVkd9LIca1LSLpkCymQ')
 
-for el in Y.listdir('/'):
+for el in Y.listdir('/Music'):
     WHOLE_CLUBS.append(el['name'])
 
 
-def download_file_to_club(club, folder, file_name):
+def download_file_to_club(club, file_name):
     try:
         if club in WHOLE_CLUBS:
             try:
-                check_folder(club, folder)
-                Y.upload(f'data/users_files/{folder}/{file_name}', f'{club}/{folder}/{file_name}')
+                # Загружаем файл на Яндекс.Диск
+                Y.upload(file_name, f'/Music/{club}/{file_name}')
                 return True
             except Exception:
                 return False
@@ -22,18 +22,18 @@ def download_file_to_club(club, folder, file_name):
         print('download_file_to_club сбоит')
 
 
-def check_folder(club, folder):
-    try:
-        the_inside = []
-
-        for elem in Y.listdir(f'/{club}'):
-            the_inside.append(elem['name'])
-
-        if the_inside:
-            if folder not in the_inside:
-                Y.mkdir(f'/{club}/{folder}')
-        else:
-            Y.mkdir(f'/{club}/{folder}')
-    except Exception:
-        print('check_folder сбоит')
-# Тут добавление файлов в Яндекс.Диск
+# def check_folder(club):
+#     try:
+#         the_inside = []
+#
+#         for elem in Y.listdir(f'/{club}'):
+#             the_inside.append(elem['name'])
+#
+#         if the_inside:
+#             if folder not in the_inside:
+#                 Y.mkdir(f'/{club}/{folder}')
+#         else:
+#             Y.mkdir(f'/{club}/{folder}')
+#     except Exception:
+#         print('check_folder сбоит')
+# # Тут добавление файлов в Яндекс.Диск

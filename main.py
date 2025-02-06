@@ -33,18 +33,36 @@ while True:
                     ]
 
         consult = show_questions()
-        CLUB = ['Иска']
+        CLUB = ['Старт-тайм', 'Олимпия-Иска', 'Узловая', 'Юнити', 'Pancher', 'Время Первых', 'Элегия', 'Перспектива']
+        TOUR = ['Спортивная весна 2024', 'Маленькая принцесса 2024', 'Весенние звездочки 2024', 'Московская зима 2024', 'Зимняя сказка 2023']
 
 
         def start_markup():
             markup = types.InlineKeyboardMarkup(row_width=True)
             link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
             link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/rg_child_league")
+            link_keyboard3 = types.InlineKeyboardButton(text="3 канал", url="https://t.me/denbug")
             check_keyboard = types.InlineKeyboardButton(text="Проверить", callback_data="check")
-            markup.add(link_keyboard1, link_keyboard2, check_keyboard)
+            markup.add(link_keyboard1, link_keyboard2, link_keyboard3, check_keyboard)
 
             return markup
         # Проверка на подписку на тг-каналы проекта - маркап из самих каналов и кнопки "проверить"
+
+
+        def rename_file(message):
+            try:
+                if message.text == 'В главное меню':
+                    bot.delete_message(message.chat.id, message.message_id - 1)
+                    admin(message)
+                    return 0
+                file_name = message.text
+                insert_into_db_data(file_name, 'File_name', message.chat.id)
+                insert_into_db_data('sending_file', 'Command', message.chat.id)
+                bot.send_message(message.chat.id, f'Прикрепите файл с музыкой (.mp3)')
+            except Exception:
+                print('Ошибка в rename_file')
+                bot.send_message(message.chat.id, 'Ошибка при вводе имени файла')
+                admin(message)
 
 
         @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
@@ -70,7 +88,7 @@ while True:
 
         def check_channels_start(message):
             markup = types.InlineKeyboardMarkup(row_width=True)
-            if check(message, "-1001649523664") and check(message, '-1001729713697'):
+            if check(message, "-1001649523664") and check(message, '-1001729713697') and check(message, '-1002142113947'):
                 bot.send_message(message.chat.id, "Спасибо за подписку ✨")
                 markup.add(admin(message))
             else:
@@ -79,8 +97,7 @@ while True:
 
 
         def check_channels(message):
-
-            if check(message, "-1001649523664") and check(message, '-1001729713697'):
+            if check(message, "-1001649523664") and check(message, '-1001729713697') and check(message, '-1002142113947'):
                 return True
             else:
                 bot.send_message(message.chat.id, "Подпишись на каналы", reply_markup=start_markup())
@@ -91,12 +108,11 @@ while True:
             bot.delete_message(message.chat.id, a.message_id)
 
             markup = make_main_markup(message)
-
-            bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
             bot.send_message(message.chat.id, 'Если у вас возникли вопросы по работе той или иной функции бота '
                                               'или он перестал отвечать на сообщения, обратитесь в поддержку: @di_petrin\n'
                                               'Если бот не отвечает на ввод фамилии или друго текста, '
                                               'попробуйте просто вернуться в главное меню и попробовать снова')
+            bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
         # функция вызова главного меню - всему голова
 
 
@@ -108,247 +124,255 @@ while True:
 
         @bot.callback_query_handler(func=lambda callback: True)
         def callback_message(callback):
-            if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
-                id_of_user = callback.message.chat.id
-                print(f"{get_data_from_column('Command', id_of_user)} - command by "
-                      f"{get_data_from_column('User_name', id_of_user)}")
-                if callback.data == 'add_new_admin':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    bot.send_message(callback.message.chat.id,
-                                     "Напишите 'Имя пользователя в телеграмме' вашего нового админа",
-                                     reply_markup=btn_for_exit()
-                                     )
-                # функция добавления нового админа
-                # бот всегда меняет главное меню на функцию во избежание ошибок и для визуального удобства
-                # для выхода в главное меню (далее: ГМ) в клавиатуре создается кнопка "В главное меню"/"Назад"
-                    file = open('data/telegram_username.jpg', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    insert_into_db_data('add_admin', 'Command', id_of_user)
-                    bot.register_next_step_handler(callback.message, inp_name)
-                    # отправка в функцию ввода имени
-                elif callback.data == 'delete_admin':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    insert_into_db_data('delete_admin', 'Command', id_of_user)
-                    del_admin(callback.message)
-                    # достаем id обратившегося к функции админа (чтобы понять кого он может удаличь) и запускаем функцию
-                elif callback.data == 'our_social_networks':
-                    bot.send_message(callback.message.chat.id, 'Вы уже подписаны на наши каналы в Телеграмм'
-                                                               ' и можете узнать многое там')
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton('VK', url='https://vk.com/club211067501'))
-                    markup.add(
-                        types.InlineKeyboardButton('YouTube 🔺', url='https://youtu.be/hVMKtZ6W0n8?si=M9X9P67CwyKHv2HJ'))
-                    bot.reply_to(callback.message,
-                                 'Но кроме этого, советуем подписаться на наш паблик ВК и посмотреть видео о нас',
-                                 reply_markup=markup)
-                    # здесь даже без функций - сразу выходит плитка с ссылками
-                elif callback.data == 'music':
-                    insert_into_db_data('send_file_to_folder', 'Command', id_of_user)
-                    bot.edit_message_text(f'Выберете папку:',
-                                          reply_markup=show_club(),
-                                          chat_id=callback.message.chat.id,
-                                          message_id=callback.message.message_id)
-                # отправка музыки на Я.Диск, замена плитки ГМ на плитку с выбором папок для добавления музыки
-                # функция напитков - перспектива дальшнейшего развития бота (+ к этому же относиться авторизация)
-                elif callback.data == 'F_A_Q':
-                    bot.edit_message_text(f'Вопросы:',
-                                          reply_markup=questions(),
-                                          chat_id=callback.message.chat.id,
-                                          message_id=callback.message.message_id)
-                # функция вызова плитки с вопросами
-                # elif callback.data == 'grade':
-                #     bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                #     bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:",
-                #                      reply_markup=btn_for_exit())
-                #     bot.register_next_step_handler(callback.message, grade)
-                elif callback.data == 'ind_grade':
-                    bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:")
-                    bot.register_next_step_handler(callback.message, ind_grade)
-                elif callback.data == 'group_grade':
-                    bot.send_message(callback.message.chat.id, "Введите название команды или дуэта, "
-                                                               "оценку которого хочешь узнать:")
-                    bot.register_next_step_handler(callback.message, group_grade)
-                # вызов функции вывода оценки из API по ФИО
-                elif callback.data == 'show_questions_from_users':
-                    bot.edit_message_text(f'Вопросы от пользователей:',
-                                          reply_markup=show_questions_from_users(),
-                                          chat_id=callback.message.chat.id,
-                                          message_id=callback.message.message_id)
-                # вызов плитки вопросов от пользователей
-                elif callback.data == 'send_questions':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    bot.send_message(callback.message.chat.id, "Напишите вопрос", reply_markup=btn_for_exit())
-                    bot.register_next_step_handler(callback.message, inp_question)
-                # функция обращения от пользователя
-                elif callback.data == 'video_live':
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton('Трансляция', url='https://vk.com/video-211067501_456239145'))
-                    bot.reply_to(callback.message,
-                                 'Скорее смотреть!!!',
-                                 reply_markup=markup)
-                elif callback.data == 'text_live':
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton('Репортаж', url='https://vk.com/textlive547685'))
-                    bot.reply_to(callback.message,
-                                 'Скорее читать!!!',
-                                 reply_markup=markup)
-                elif callback.data in CLUB:
-                # в будущем этот общий прием данных для турниров и клубов будет разделен, так как названия
-                # клубов будут отличаться от названий турниров
-                    if get_data_from_column('Command', id_of_user) == 'get_table':
+            try:
+                if check(callback.message, callback.message.chat.id) and check_channels(callback.message):
+                    id_of_user = callback.message.chat.id
+                    print(f"{get_data_from_column('Command', id_of_user)} - command by "
+                          f"{get_data_from_column('User_name', id_of_user)}")
+                    if callback.data == 'add_new_admin':
                         bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                        f1 = slim_shady(callback.data)
-                        bot.send_document(callback.message.chat.id, f1, reply_markup=btn_for_exit())
-                    # Создание таблицы Excel с данными заявок по конкретному турниру - функция для админов
-                    elif get_data_from_column('Command', id_of_user) == 'send_file_to_folder':
-                        insert_into_db_data(callback.data, 'Your_club', id_of_user)
+                        bot.send_message(callback.message.chat.id,
+                                         "Напишите 'Имя пользователя в телеграмме' вашего нового админа",
+                                         reply_markup=btn_for_exit()
+                                         )
+                    # функция добавления нового админа
+                    # бот всегда меняет главное меню на функцию во избежание ошибок и для визуального удобства
+                    # для выхода в главное меню (далее: ГМ) в клавиатуре создается кнопка "В главное меню"/"Назад"
+                        file = open('data/telegram_username.jpg', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        insert_into_db_data('add_admin', 'Command', id_of_user)
+                        bot.register_next_step_handler(callback.message, inp_name)
+                        # отправка в функцию ввода имени
+                    elif callback.data == 'delete_admin':
                         bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                        bot.send_message(callback.message.chat.id, 'Напишите ФИО', reply_markup=btn_for_exit())
-                        bot.register_next_step_handler(callback.message, inp_folder)
-                    # Создание или обращение к существующей папке в Я.Диске для добавления музыки
-                elif callback.data.isdigit():
-                    if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
-                        insert_into_db_data('answer_to_question', 'Command', id_of_user)
+                        insert_into_db_data('delete_admin', 'Command', id_of_user)
+                        del_admin(callback.message)
+                        # достаем id обратившегося к функции админа (чтобы понять кого он может удаличь) и запускаем функцию
+                    elif callback.data == 'our_social_networks':
+                        bot.send_message(callback.message.chat.id, 'Вы уже подписаны на наши каналы в Телеграмм'
+                                                                   ' и можете узнать многое там')
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton('VK', url='https://vk.com/club211067501'))
+                        markup.add(
+                            types.InlineKeyboardButton('YouTube 🔺', url='https://youtu.be/hVMKtZ6W0n8?si=M9X9P67CwyKHv2HJ'))
+                        bot.reply_to(callback.message,
+                                     'Но кроме этого, советуем подписаться на наш паблик ВК и посмотреть видео о нас',
+                                     reply_markup=markup)
+                        # здесь даже без функций - сразу выходит плитка с ссылками67 222`````
+                    elif callback.data == 'music':
+                        insert_into_db_data('send_file_to_folder', 'Command', id_of_user)
+                        bot.edit_message_text(f'Выберете папку:',
+                                              reply_markup=show_club(),
+                                              chat_id=callback.message.chat.id,
+                                              message_id=callback.message.message_id)
+                    # отправка музыки на Я.Диск, замена плитки ГМ на плитку с выбором папок для добавления музыки
+                    # функция напитков - перспектива дальшнейшего развития бота (+ к этому же относиться авторизация)
+                    elif callback.data == 'F_A_Q':
+                        bot.edit_message_text(f'Вопросы:',
+                                              reply_markup=questions(),
+                                              chat_id=callback.message.chat.id,
+                                              message_id=callback.message.message_id)
+                    # функция вызова плитки с вопросами
+                    # elif callback.data == 'grade':
+                    #     bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                    #     bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:",
+                    #                      reply_markup=btn_for_exit())
+                    #     bot.register_next_step_handler(callback.message, grade)
+                    elif callback.data == 'ind_grade':
+                        bot.send_message(callback.message.chat.id, "Введите Фамилию Имя гимнастки:")
+                        bot.register_next_step_handler(callback.message, ind_grade)
+                    elif callback.data == 'group_grade':
+                        bot.send_message(callback.message.chat.id, "Введите название команды или дуэта, "
+                                                                   "оценку которого хочешь узнать:")
+                        bot.register_next_step_handler(callback.message, group_grade)
+                    elif callback.data == 'check':
+                        admin(callback.message)
+                    # вызов функции вывода оценки из API по ФИО
+                    elif callback.data == 'show_questions_from_users':
+                        bot.edit_message_text(f'Вопросы от пользователей:',
+                                              reply_markup=show_questions_from_users(),
+                                              chat_id=callback.message.chat.id,
+                                              message_id=callback.message.message_id)
+                    # вызов плитки вопросов от пользователей
+                    elif callback.data == 'send_questions':
                         bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                        bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
-                        insert_into_db_data(consult[int(callback.data) - 1][1], 'Printed_work', id_of_user)
-                        bot.register_next_step_handler(callback.message, answer)
-                    # ответы на вопросы от пользователей
-                elif callback.data == 'show_count_of_users':
-                    c_of_users = count_of_users()
-                    bot.send_message(callback.message.chat.id, c_of_users)
-                    # вызов функции обращения к API сайта, а именно получения кол-ва открытых кабинетов
-                elif callback.data == 'table':
-                    insert_into_db_data('get_table', 'Command', id_of_user)
-                    bot.edit_message_text(f'Выберите интересующий турнир:',
-                                          reply_markup=change_on_table(),
-                                          chat_id=callback.message.chat.id,
-                                          message_id=callback.message.message_id)
-                    # Создание плиток с выбором турнира, по которому выгрузить заявки и создать EXCEl
-                elif callback.data == 'qw_1':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    file = open('data/checkroom0.jpg', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    bot.send_message(callback.message.chat.id,
-                                     'Войдя через главный вход, проходите через турникет и заворачиваете направо')
-                    file = open('data/checkroom1.jpg', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    bot.send_message(callback.message.chat.id, 'проходите по коридору вперед')
-                    file = open('data/checkroom2.jpg', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    bot.send_message(callback.message.chat.id, 'поворачиваете налево и входите в раздевалку, вы на месте!',
-                                     reply_markup=btn_for_questions())
-                elif callback.data == 'qw_2':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    file = open('data/rating1.png', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton('Перейти в профиль/зарегистрироваться', url='https://uniade.world/profile'))
-                    bot.send_message(callback.message.chat.id,
-                                     'Зарегистрироваться на сайте (если еще этого не сделали), в профиле выбрать "достижения"',
+                        bot.send_message(callback.message.chat.id, "Напишите вопрос", reply_markup=btn_for_exit())
+                        bot.register_next_step_handler(callback.message, inp_question)
+                    # функция обращения от пользователя
+                    elif callback.data == 'video_live':
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton('Трансляция', url='https://vk.com/video-211067501_456239145'))
+                        bot.reply_to(callback.message,
+                                     'Скорее смотреть!!!',
                                      reply_markup=markup)
-                    file = open('data/rating2.png', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    bot.send_message(callback.message.chat.id,
-                                     'В разделе достижения будет указано значения рейтинга (твой рейтинг) и достижения',
-                                     reply_markup=btn_for_questions())
-                elif callback.data == 'qw_3':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton('Смотреть!', callback_data='grade'))
-                    bot.send_message(callback.message.chat.id,
-                                     'Вы можете посмотреть оценки участниц прошлого федерального этапа',
-                                     reply_markup=btn_for_questions())
-                elif callback.data == 'qw_4':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    bot.send_message(callback.message.chat.id, 'Фото будут доступны на сайте ниже с 16 апреля')
-                    file = open('data/photo_qr.png', 'rb')
-                    bot.send_photo(callback.message.chat.id, file, reply_markup=btn_for_questions())
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton('Заказать', url='http://kondakov.online/order.html'))
-                    bot.send_message(callback.message.chat.id,
-                                     'Сайт с фотографиями',
+                    elif callback.data == 'text_live':
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton('Репортаж', url='https://vk.com/textlive547685'))
+                        bot.reply_to(callback.message,
+                                     'Скорее читать!!!',
                                      reply_markup=markup)
-                elif callback.data == 'qw_5':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    bot.send_message(callback.message.chat.id, 'ответ 5', reply_markup=btn_for_questions())
-                elif callback.data == 'qw_6':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    bot.send_message(callback.message.chat.id,
-                                     'Чтобы судьи понимали тайминг упражнения, соответствующий правилам!',
-                                     reply_markup=btn_for_questions())
-                elif callback.data == 'qw_7':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton(
-                            'Скорее смотреть!!!', url='https://vk.com/textlive547685'))
-                    bot.send_message(callback.message.chat.id,
-                                     'Подайте заявку на вступление в сообщество.',
-                                     reply_markup=markup)
-                    bot.send_message(callback.message.chat.id, 'Когда она будет принята, Вы сможете узнать в репортаже',
-                                     reply_markup=btn_for_questions())
-                elif callback.data == 'qw_8':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton(
-                            'Скорее смотреть!!!', url='https://vk.com/textlive547685'))
-                    bot.send_message(callback.message.chat.id,
-                                     'Подайте заявку на вступление в сообщество.',
-                                     reply_markup=markup)
-                    bot.send_message(callback.message.chat.id,
-                                     'Когда она будет принята, Вы сможете увидеть долгожданные выступления',
-                                     reply_markup=btn_for_questions())
-                elif callback.data == 'qw_9':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    file = open('data/online1.png', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton('Перейти в профиль/зарегистрироваться', url='https://uniade.world/profile'))
-                    bot.send_message(callback.message.chat.id,
-                                     'Зарегистрироваться на сайте (если еще этого не сделали), '
-                                     'в профиле выбрать "подать заявку"',
-                                     reply_markup=markup)
-                    file = open('data/online2.png', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    bot.send_message(callback.message.chat.id, 'При оплате выбрать "онлайн"',
-                                     reply_markup=btn_for_questions())
-                elif callback.data == 'qw_10':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    file = open('data/photo1.png', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(
-                        types.InlineKeyboardButton('Перейти в профиль/зарегистрироваться', url='https://uniade.world/profile'))
-                    bot.send_message(callback.message.chat.id,
-                                     'Зарегистрироваться на сайте (если еще этого не сделали), '
-                                     'в профиле выбрать "загрузить фото для турнира"',
-                                     reply_markup=markup)
-                    file = open('data/photo2.png', 'rb')
-                    bot.send_photo(callback.message.chat.id, file)
-                    bot.send_message(callback.message.chat.id,
-                                     'Далее нажмите "Загрузить фото"', reply_markup=btn_for_questions())
-                elif callback.data == 'qw_11':
-                    bot.delete_message(callback.message.chat.id, callback.message.message_id)
-                    bot.send_message(callback.message.chat.id, 'Справа от входа в арку находится стол dj, '
-                                                               'именно этому харизматичному мужчине нужно сдать флешку XD')
-                    file = open('data/dj.jpg', 'rb')
-                    bot.send_photo(callback.message.chat.id, file, reply_markup=btn_for_questions())
-                #Прием всех вопросов из плитки вопросов и вызов соответствующих ответов
-                elif callback.data == 'qw_quit':
-                    bot.edit_message_text(f'Вы можете выполнить такие функции:',
-                                          reply_markup=make_main_markup(callback.message),
-                                          chat_id=callback.message.chat.id,
-                                          message_id=callback.message.message_id)
-                #выход в главное меню
+                    elif callback.data in TOUR:
+                    # в будущем этот общий прием данных для турниров и клубов будет разделен, так как названия
+                    # клубов будут отличаться от названий турниров
+                        if get_data_from_column('Command', id_of_user) == '6 get_table':
+                            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                            f1 = slim_shady(callback.data)
+                            bot.send_document(callback.message.chat.id, f1, reply_markup=btn_for_exit())
+                    elif callback.data in CLUB:
+                        if get_data_from_column('Command', id_of_user) == 'send_file_to_folder':
+                            insert_into_db_data(callback.data, 'Your_club', id_of_user)
+                            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                            bot.send_message(callback.message.chat.id, 'Введите имя файла:',
+                                             reply_markup=btn_for_exit())
+                            bot.register_next_step_handler(callback.message, rename_file)
+                        # Создание или обращение к существующей папке в Я.Диске для добавления музыки
+                    elif callback.data.isdigit():
+                        if [i for i in consult if int(callback.data) == i[0]] and callback.data.isdigit():
+                            insert_into_db_data('answer_to_question', 'Command', id_of_user)
+                            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                            bot.send_message(callback.message.chat.id, f"Вы выбрали '{consult[int(callback.data) - 1][1]}'")
+                            insert_into_db_data(consult[int(callback.data) - 1][1], 'Printed_work', id_of_user)
+                            bot.register_next_step_handler(callback.message, answer)
+                        # ответы на вопросы от  elif callback.data == 'group_grade
+                        #  elif callback.data == 'group_gradeпользователей
+                    elif callback.data == 'show_count_of_users':
+                        c_of_users = count_of_users()
+                        bot.send_message(callback.message.chat.id, c_of_users)
+                        # вызов функции обращения к API сайта, а именно получения кол-ва открытых кабинетов
+                    elif callback.data == 'table':
+                        insert_into_db_data('get_table', 'Command', id_of_user)
+                        bot.edit_message_text(f'Выберите интересующий турнир:',
+                                              reply_markup=change_on_table(),
+                                              chat_id=callback.message.chat.id,
+                                              message_id=callback.message.message_id)
+                        # Создание плиток с выбором турнира, по которому выгрузить заявки и создать EXCEl
+                    elif callback.data == 'qw_1':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        file = open('data/checkroom0.jpg', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        bot.send_message(callback.message.chat.id,
+                                         'Войдя через главный вход, проходите через турникет и заворачиваете направо')
+                        file = open('data/checkroom1.jpg', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        bot.send_message(callback.message.chat.id, 'проходите по коридору вперед')
+                        file = open('data/checkroom2.jpg', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        bot.send_message(callback.message.chat.id, 'поворачиваете налево и входите в раздевалку, вы на месте!',
+                                         reply_markup=btn_for_questions())
+                    elif callback.data == 'qw_2':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        file = open('data/rating1.png', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton('Перейти в профиль/зарегистрироваться', url='https://uniade.world/profile'))
+                        bot.send_message(callback.message.chat.id,
+                                         'Зарегистрироваться на сайте (если еще этого не сделали), в профиле выбрать "достижения"',
+                                         reply_markup=markup)
+                        file = open('data/rating2.png', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        bot.send_message(callback.message.chat.id,
+                                         'В разделе достижения будет указано значения рейтинга (твой рейтинг) и достижения',
+                                         reply_markup=btn_for_questions())
+                    elif callback.data == 'qw_3':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton('Смотреть!', callback_data='grade'))
+                        bot.send_message(callback.message.chat.id,
+                                         'Вы можете посмотреть оценки участниц прошлого федерального этапа',
+                                         reply_markup=btn_for_questions())
+                    elif callback.data == 'qw_4':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        bot.send_message(callback.message.chat.id, 'Фото будут доступны на сайте ниже с 16 апреля')
+                        file = open('data/photo_qr.png', 'rb')
+                        bot.send_photo(callback.message.chat.id, file, reply_markup=btn_for_questions())
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton('Заказать', url='http://kondakov.online/order.html'))
+                        bot.send_message(callback.message.chat.id,
+                                         'Сайт с фотографиями',
+                                         reply_markup=markup)
+                    elif callback.data == 'qw_5':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        bot.send_message(callback.message.chat.id, 'ответ 5', reply_markup=btn_for_questions())
+                    elif callback.data == 'qw_6':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        bot.send_message(callback.message.chat.id,
+                                         'Чтобы судьи понимали тайминг упражнения, соответствующий правилам!',
+                                         reply_markup=btn_for_questions())
+                    elif callback.data == 'qw_7':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton(
+                                'Скорее смотреть!!!', url='https://vk.com/textlive547685'))
+                        bot.send_message(callback.message.chat.id,
+                                         'Подайте заявку на вступление в сообщество.',
+                                         reply_markup=markup)
+                        bot.send_message(callback.message.chat.id, 'Когда она будет принята, Вы сможете узнать в репортаже',
+                                         reply_markup=btn_for_questions())
+                    elif callback.data == 'qw_8':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton(
+                                'Скорее смотреть!!!', url='https://vk.com/textlive547685'))
+                        bot.send_message(callback.message.chat.id,
+                                         'Подайте заявку на вступление в сообщество.',
+                                         reply_markup=markup)
+                        bot.send_message(callback.message.chat.id,
+                                         'Когда она будет принята, Вы сможете увидеть долгожданные выступления',
+                                         reply_markup=btn_for_questions())
+                    elif callback.data == 'qw_9':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        file = open('data/online1.png', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton('Перейти в профиль/зарегистрироваться', url='https://uniade.world/profile'))
+                        bot.send_message(callback.message.chat.id,
+                                         'Зарегистрироваться на сайте (если еще этого не сделали), '
+                                         'в профиле выбрать "подать заявку"',
+                                         reply_markup=markup)
+                        file = open('data/online2.png', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        bot.send_message(callback.message.chat.id, 'При оплате выбрать "онлайн"',
+                                         reply_markup=btn_for_questions())
+                    elif callback.data == 'qw_10':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        file = open('data/photo1.png', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        markup = types.InlineKeyboardMarkup()
+                        markup.add(
+                            types.InlineKeyboardButton('Перейти в профиль/зарегистрироваться', url='https://uniade.world/profile'))
+                        bot.send_message(callback.message.chat.id,
+                                         'Зарегистрироваться на сайте (если еще этого не сделали), '
+                                         'в профиле выбрать "загрузить фото для турнира"',
+                                         reply_markup=markup)
+                        file = open('data/photo2.png', 'rb')
+                        bot.send_photo(callback.message.chat.id, file)
+                        bot.send_message(callback.message.chat.id,
+                                         'Далее нажмите "Загрузить фото"', reply_markup=btn_for_questions())
+                    elif callback.data == 'qw_11':
+                        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                        bot.send_message(callback.message.chat.id, 'Справа от входа в арку находится стол dj, '
+                                                                   'именно этому харизматичному мужчине нужно сдать флешку XD')
+                        file = open('data/dj.jpg', 'rb')
+                        bot.send_photo(callback.message.chat.id, file, reply_markup=btn_for_questions())
+                    #Прием всех вопросов из плитки вопросов и вызов соответствующих ответов
+                    elif callback.data == 'qw_quit':
+                        bot.edit_message_text(f'Вы можете выполнить такие функции:',
+                                              reply_markup=make_main_markup(callback.message),
+                                              chat_id=callback.message.chat.id,
+                                              message_id=callback.message.message_id)
+                    #выход в главное мен
+            except Exception:
+                admin(callback.message)
+                bot.send_message(callback.message.chat.id, 'Что-то пошло не так, попробуйте ещераз')
 
 
         @bot.message_handler(content_types=['text'])
@@ -392,32 +416,32 @@ while True:
 
 
         @bot.message_handler(content_types=['audio'])
-        # отправка уже непосредственно аудио на Я.Диск, с промежуточным сохранением и последующим удалением из папки проекта
         def send_audio_into_folder(message):
             try:
                 if get_data_from_column('Command', message.chat.id) == 'sending_file':
                     file_info = bot.get_file(message.audio.file_id)
                     downloaded_file = bot.download_file(file_info.file_path)
 
-                    fio = get_data_from_column('Fio', message.chat.id)
-                    name = message.audio.file_name
+                    file_name = get_data_from_column('File_name', message.chat.id)
                     your_club = get_data_from_column('Your_club', message.chat.id)
 
-                    make_new_folder_from_user(fio, name, downloaded_file)
+                    # Прямая загрузка файла на Яндекс.Диск
+                    with open(file_name, 'wb') as new_file:
+                        new_file.write(downloaded_file)
 
-                    print(your_club, fio, name)
+                    # Загрузка файла на Яндекс.Диск
+                    resp = download_file_to_club(your_club, file_name)
 
-                    resp = download_file_to_club(your_club, fio, name)
-                    shutil.rmtree(f'data/users_files/{fio}')
                     if resp is False:
                         bot.send_message(message.chat.id, 'Файл с таким названием уже существует\n'
                                                           'Поменяйте название файла и прикрепите его повторно')
                     else:
                         bot.send_message(message.chat.id, 'Файл успешно прикреплен', reply_markup=btn_for_exit())
+                        insert_into_db_data('', 'File_name', message.chat.id)  # Очистка значения File_name
                         insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
             except Exception:
                 bot.send_message(message.chat.id, 'Произошла ошибка', reply_markup=admin(message))
-                print('Неудачное прикрепление аудио')
+                print('Неудачная попытка загрузки аудио')
 
 
         # Ввод фамилии и имени пользователя:
@@ -437,10 +461,8 @@ while True:
                 print('Ошибка в inp_folder')
                 bot.send_message(message.chat.id,'Ошибка при вводе имени папки')
                 admin(message)
-
-
-
         # Ввод имени админа:
+
         def inp_name(message):
             try:
                 if message.text == 'В главное меню':
@@ -450,7 +472,7 @@ while True:
                     return 0
                 text = message.text
                 insert_into_db_data(text, 'Name_of_smb', message.chat.id)
-                bot.send_message(message.chat.id, f'Такое имя: {text}?')
+                bot.send_message(message.chat.id, f'Тако`е имя: {text}?')
                 yes_or_no(message)
             except Exception:
                 print('Ошибка в имени inp_name')
@@ -465,7 +487,7 @@ while True:
             bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
 
 
-        #удаление админов, из тех, что админ добавил:
+        #удаление админов:
         def del_admin(message):
             if message.text == 'В главное меню':
                 bot.delete_message(message.chat.id, message.message_id - 1)
@@ -476,8 +498,6 @@ while True:
             bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа",
                              reply_markup=btn_for_exit())
             bot.register_next_step_handler(message, inp_name)
-
-
         # Ввод вопросов:
         def inp_question(message):
             try:
@@ -563,7 +583,7 @@ while True:
         # Выводит кнопки с названием Турниров
         def change_on_table():
             markup = types.InlineKeyboardMarkup()
-            for i in CLUB:
+            for i in TOUR:
                 markup.add(types.InlineKeyboardButton(f'{i}', callback_data=i))
             ret = types.InlineKeyboardButton(f'Выйти', callback_data='qw_quit')
             markup.add(ret)

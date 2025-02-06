@@ -119,10 +119,6 @@ def delete_your_admins(your_name, name):
 
     return note
 
-# Сделать круто!!!!!!!!!!!!
-
-# Делал Денис, функция возвращающая список админов:
-
 
 def ladmins():
     con = sqlite3.connect('Admins.db')

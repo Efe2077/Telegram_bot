@@ -18,7 +18,8 @@ def insert_into_db_data(thing, column, user_id):
     con = sqlite3.connect('Users.db')
     cur = con.cursor()
 
-    cur.execute(f"""UPDATE Users SET '{column}' = '{thing}' WHERE Id = '{user_id}' """).fetchall()
+    query = f"UPDATE Users SET {column} = ? WHERE Id = ?"
+    cur.execute(query, (thing, user_id))
 
     con.commit()
     con.close()
