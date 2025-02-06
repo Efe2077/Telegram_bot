@@ -32,7 +32,6 @@ while True:
                     'Прощайте', 'Бывай', 'Пока',
                     ]
 
-        admin_list = ladmins()
 
         consult = show_questions()
         CLUB = ['Старт-тайм', 'Олимпия-Иска', 'Узловая', 'Юнити', 'Pancher', 'Время Первых', 'Элегия', 'Перспектива']
@@ -139,10 +138,6 @@ while True:
                                               'попробуйте начать заново: /start или обратиться в поддержку (@di_petrin)')
             bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
         # функция вызова главного меню - всему голова
-
-        def notify(who, about):
-            for i in who:
-                bot.send_message(int(i), about)
 
 
         @bot.message_handler(commands=['bye', 'end', 'пока'])
