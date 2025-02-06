@@ -32,6 +32,8 @@ while True:
                     'Прощайте', 'Бывай', 'Пока',
                     ]
 
+        admin_list = ladmins()
+
         consult = show_questions()
         CLUB = ['Старт-тайм', 'Олимпия-Иска', 'Узловая', 'Юнити', 'Pancher', 'Время Первых', 'Элегия', 'Перспектива']
         TOUR = ['Спортивная весна 2024', 'Маленькая принцесса 2024', 'Весенние звездочки 2024', 'Московская зима 2024', 'Зимняя сказка 2023']
@@ -67,17 +69,41 @@ while True:
 
         @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
         def start(message):
-            bot.send_message(message.chat.id, choice(GREETINGS))
             name = message.from_user.first_name
 
             if name == 'Uniade bot':
                 name = message.chat.first_name
 
-            bot.send_message(message.chat.id, name)
+            bot.send_message(message.chat.id, f'{choice(GREETINGS)}, {name}')
 
             if check(message, message.chat.id) and check_channels_start(message):
-                admin(message)
+
+                if check_admin_status(message.chat.username):
+                    admin(message)  # Если пользователь админ, переходим в админское меню
+                else:
+                    ask_role(message)
         # команда "/start": приветствие, проверка подписки и в перспективе - авторизация для раздельных лк
+
+        def ask_role(message):
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+            markup.add("Судья", "Гость")
+            bot.send_message(message.chat.id, "Выберите вашу роль:", reply_markup=markup)
+            bot.register_next_step_handler(message, process_role)
+
+
+        def process_role(message):
+            role = message.text
+            if role == "Судья":
+                # Сохраняем статус "судья" в базу данных
+                insert_into_db_data("судья", "Status", message.chat.id)
+                bot.send_message(message.chat.id, "Вы выбрали роль судьи. Вы можете заказывать напитки.")
+            elif role == "Гость":
+                # Сохраняем статус "гость" в базу данных
+                insert_into_db_data("гость", "Status", message.chat.id)
+                bot.send_message(message.chat.id, "Вы выбрали роль гостя.")
+            else:
+                bot.send_message(message.chat.id, "Пожалуйста, выберите роль из предложенных вариантов.")
+                ask_role(message)
 
 
         def check(message, chat_id):
@@ -108,12 +134,15 @@ while True:
             bot.delete_message(message.chat.id, a.message_id)
 
             markup = make_main_markup(message)
-            bot.send_message(message.chat.id, 'Если у вас возникли вопросы по работе той или иной функции бота '
-                                              'или он перестал отвечать на сообщения, обратитесь в поддержку: @di_petrin\n'
-                                              'Если бот не отвечает на ввод фамилии или друго текста, '
-                                              'попробуйте просто вернуться в главное меню и попробовать снова')
+            bot.send_message(message.chat.id, '\n'
+                                              'Если бот не отвечает, '
+                                              'попробуйте начать заново: /start или обратиться в поддержку (@di_petrin)')
             bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
         # функция вызова главного меню - всему голова
+
+        def notify(who, about):
+            for i in who:
+                bot.send_message(int(i), about)
 
 
         @bot.message_handler(commands=['bye', 'end', 'пока'])
@@ -508,10 +537,8 @@ while True:
                 bot.send_message(message.chat.id, f"Ваш вопрос:\n{question_from_user}", reply_markup=btn_for_exit())
                 now = datetime.now().strftime('%m-%d %H:%M')
                 send_questions(message.chat.id, str(now) + ': ' + question_from_user)
-                admin_list = ladmins()
-                for i in admin_list:
-                    bot.send_message(int(i), 'Новый вопрос от пользователя!!!')
                 # Уведомление всех админов о вопросе
+                notify(admin_list, 'Новый вопрос от пользователя!!!')
             except Exception:
                 print('Ошибка в вопросе inp_question')
                 bot.send_message(message.chat.id, 'Ошибка в вопросе!!!')
@@ -579,7 +606,6 @@ while True:
             bot.send_message(id_of_user, f'Ответ от админа: {text}')
             admin(message)
 
-
         # Выводит кнопки с названием Турниров
         def change_on_table():
             markup = types.InlineKeyboardMarkup()
@@ -590,29 +616,32 @@ while True:
 
             return markup
 
-
         # Главные кнопки
         def make_main_markup(message):
             name, name2, id_of_user = message.chat.username, message.chat.first_name, message.chat.id
 
             admin_status = check_admin_status(name)  # проверка статуса админа
+            judge_status = (get_data_from_column("Status", message.chat.id) == 'судья')
             add_user(name, name2, id_of_user)  # Добавление нового пользователя
 
             markup = types.InlineKeyboardMarkup()
-            btn2 = types.InlineKeyboardButton('Групповая оценка', callback_data='group_grade')
-            btn3 = types.InlineKeyboardButton('Индивид. оценка', callback_data='ind_grade')
-            markup.row(btn2)
-            markup.row(btn3)
-            btn4 = types.InlineKeyboardButton('Музыка', callback_data='music')
+            # btn2 = types.InlineKeyboardButton('Групповая оценка', callback_data='group_grade')
+            # btn3 = types.InlineKeyboardButton('Индивид. оценка', callback_data='ind_grade')
+            # markup.row(btn2)
+            # markup.row(btn3)
+            btn4 = types.InlineKeyboardButton('Загрузить музыку', callback_data='music')
             markup.row(btn4)
             btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='send_questions')
             markup.row(btn6)
-            btn7 = types.InlineKeyboardButton('ЧаВо⁉️', callback_data='F_A_Q')
+            # btn7 = types.InlineKeyboardButton('ЧаВо⁉️', callback_data='F_A_Q')
             btn8 = types.InlineKeyboardButton('О нас', callback_data='our_social_networks')
-            markup.row(btn7, btn8)
-            btn9 = types.InlineKeyboardButton('Видео-live', callback_data='video_live')
-            btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
-            markup.row(btn9, btn10)
+            markup.row(btn8)
+            # btn9 = types.InlineKeyboardButton('Видео-live', callback_data='video_live')
+            # btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
+            # markup.row(btn9, btn10)
+            if judge_status or admin_status:
+                btn_drinks = types.InlineKeyboardButton('Заказать напитки', callback_data='order_drinks')
+                markup.row(btn_drinks)
             if admin_status:
                 btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
                 markup.row(btn_for_admin1)
@@ -621,13 +650,15 @@ while True:
                 btn_for_admin3 = types.InlineKeyboardButton('Вопросы от пользователей',
                                                             callback_data='show_questions_from_users')
                 markup.row(btn_for_admin3)
-                btn_for_admin3 = types.InlineKeyboardButton('Количество пользователей', callback_data='show_count_of_users')
+                btn_for_admin3 = types.InlineKeyboardButton('Количество пользователей',
+                                                            callback_data='show_count_of_users')
                 markup.row(btn_for_admin3)
-                btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
-                markup.row(btn_for_admin4)
+                btn_offers = types.InlineKeyboardButton('Заказы', callback_data='orders')
+                markup.row(btn_offers)
+                # btn_for_admin4 = types.InlineKeyboardButton('Таблица участников', callback_data='table')
+                # markup.row(btn_for_admin4)
 
             return markup
-
 
         # Кнопки с вопросами
         def questions():
@@ -648,7 +679,6 @@ while True:
             markup2.add(types.InlineKeyboardButton('выйти', callback_data='qw_quit'))
             return markup2
 
-
         # Кнопка для выхода
         def btn_for_exit():
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
@@ -656,7 +686,6 @@ while True:
             markup.add(btn)
 
             return markup
-
 
         def btn_for_questions():
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
