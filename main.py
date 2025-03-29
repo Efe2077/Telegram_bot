@@ -60,7 +60,7 @@ while True:
         def start_markup():
             markup = types.InlineKeyboardMarkup(row_width=True)
             link_keyboard1 = types.InlineKeyboardButton(text="канал", url="https://t.me/gymnastkapolechka")
-            link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/rg_child_league")
+            link_keyboard2 = types.InlineKeyboardButton(text="2 канал", url="https://t.me/worlduniade")
             link_keyboard3 = types.InlineKeyboardButton(text="3 канал", url="https://t.me/denbug")
             check_keyboard = types.InlineKeyboardButton(text="Проверить", callback_data="check")
             markup.add(link_keyboard1, link_keyboard2, link_keyboard3, check_keyboard)
