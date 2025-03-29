@@ -4,6 +4,7 @@ import requests
 import xlsxwriter
 # для записи данных о пользователях в .xlsx - удобный для всех версий вариант представления инф-ции
 import os
+from dotenv import load_dotenv
 import shutil
 from telebot import types
 from datetime import datetime
@@ -19,7 +20,9 @@ while True:
         # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
         # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - Эфе
         # 7072278948:AAHULSz4lWo-FADGtYPvT8zvug3RpySHIFA - Дениса
-        bot = telebot.TeleBot('7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo')
+        load_dotenv()
+        BOT = os.getenv('B')
+        bot = telebot.TeleBot(BOT)
 
 
         GREETINGS = ['Привет', 'Приветствую вас',
@@ -435,29 +438,29 @@ while True:
         def send_audio_into_folder(message):
             try:
                 if get_data_from_column('Command', message.chat.id) == 'sending_file':
+                    # Получаем информацию о файле
                     file_info = bot.get_file(message.audio.file_id)
-                    downloaded_file = bot.download_file(file_info.file_path)
+                    downloaded_file = bot.download_file(file_info.file_path)  # Получаем бинарные данные файла
 
                     file_name = get_data_from_column('File_name', message.chat.id)
                     your_club = get_data_from_column('Your_club', message.chat.id)
 
-                    # Прямая загрузка файла на Яндекс.Диск
-                    with open(file_name, 'wb') as new_file:
-                        new_file.write(downloaded_file)
+                    # Загружаем напрямую на Яндекс.Диск
+                    success = download_file_to_club(your_club, file_name, downloaded_file)
 
-                    # Загрузка файла на Яндекс.Диск
-                    resp = download_file_to_club(your_club, file_name)
-
-                    if resp is False:
-                        bot.send_message(message.chat.id, 'Файл с таким названием уже существует\n'
+                    if not success:
+                        bot.send_message(message.chat.id, 'Файл с таким названием уже существует или произошла ошибка\n'
                                                           'Поменяйте название файла и прикрепите его повторно')
                     else:
                         bot.send_message(message.chat.id, 'Файл успешно прикреплен', reply_markup=btn_for_exit())
-                        insert_into_db_data('', 'File_name', message.chat.id)  # Очистка значения File_name
-                        insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
-            except Exception:
-                bot.send_message(message.chat.id, 'Произошла ошибка', reply_markup=admin(message))
-                print('Неудачная попытка загрузки аудио')
+
+                    # Очистка значений
+                    insert_into_db_data('', 'File_name', message.chat.id)
+                    insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
+
+            except Exception as e:
+                print(f'Ошибка при обработке аудио: {e}')
+                bot.send_message(message.chat.id, 'Произошла ошибка при обработке файла', reply_markup=admin(message))
 
 
         # Ввод фамилии и имени пользователя:
