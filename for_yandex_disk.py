@@ -3,7 +3,8 @@ import yadisk
 
 WHOLE_CLUBS = []
 
-Y = yadisk.YaDisk(token='y0__xDD7pTdAhj0gzUgiuaJmhLIoLzALNJgVkd9LIca1LSLpkCymQ')
+Y = yadisk.YaDisk(token='y0__xC15kcY9IM1IJaZ39USvGCqQxg1HS9DHvtCd7qU-umxzzQ')
+
 
 for el in Y.listdir('/Music'):
     WHOLE_CLUBS.append(el['name'])
