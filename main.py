@@ -1,4 +1,5 @@
 import telebot
+from random import choice
 import requests
 # для получения данных из API
 import xlsxwriter
@@ -7,13 +8,17 @@ import os
 import shutil
 from telebot import types
 from datetime import datetime
-from random import choice
+
 from telebot.types import ReplyKeyboardRemove
+
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
 from add_new import check_admin_status, add_admin, delete_your_admins, add_user, ladmins
 from for_yandex_disk import download_file_to_club
 from for_file_and_req import slim_shady, count_of_users, ind_grading, group_grading, make_new_folder_from_user, get_clubs
 from for_db_tasks import insert_into_db_data, get_data_from_column
+from order_drinks import *
+from order_management import get_all_orders, change_order_status, format_order_text
+
 while True:
     try:
         # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
@@ -34,7 +39,23 @@ while True:
 
 
         consult = show_questions()
-        CLUB = ['Старт-тайм', 'Олимпия-Иска', 'Узловая', 'Юнити', 'Pancher', 'Время Первых', 'Элегия', 'Перспектива']
+        CLUB = ['1 - Содружество',
+                '10 - СШОР Восток',
+                '11 - Иска',
+                '12 - Старт Тайм',
+                '13 - СШ Краснознаменск',
+                '14 - Созвездие граций',
+                '15 - ГБОУДО Косарева Релеве',
+                '16 - СК Переворот',
+                '17 - Воробьевы горы',
+                '2 - МКСШОР ЮГ',
+                '3 - Самбо-70',
+                '4 - ФОК Ершово.xlsx',
+                '5 - РДДТ Каболоева Б.Е.',
+                '6 - ЦСКА',
+                '7 - АНО СРС Поволжье',
+                '8 - СОК им. Тедеева',
+                '9 - Элегия']
         TOUR = ['Спортивная весна 2024', 'Маленькая принцесса 2024', 'Весенние звездочки 2024', 'Московская зима 2024', 'Зимняя сказка 2023']
 
 
@@ -66,7 +87,7 @@ while True:
                 admin(message)
 
 
-        @bot.message_handler(commands=['start', 'hello', 'привет', 'hi'])
+        @bot.message_handler(command=['start'])
         def start(message):
             name = message.from_user.first_name
 
@@ -387,18 +408,89 @@ while True:
                                                                    'именно этому харизматичному мужчине нужно сдать флешку XD')
                         file = open('data/dj.jpg', 'rb')
                         bot.send_photo(callback.message.chat.id, file, reply_markup=btn_for_questions())
+                    # region Заказ напитков
+                    elif callback.data == 'drinks':
+                        start_order(callback.message, bot)
+                    elif callback.data.startswith("ordy"):
+                        try:
+                            process_drink_choice(callback, bot)
+                        except Exception as e:
+                            print(e)
+                            bot.answer_callback_query(callback.id,
+                                                      "Произошла ошибка. Пожалуйста, попробуйте выбрать напиток снова.")
+                            start_order(callback.message, bot)
+                    elif callback.data.startswith("coffee") or callback.data.startswith("tea"):
+                        try:
+                            process_subtype_choice(callback, bot)
+                        except Exception as e:
+                            bot.answer_callback_query(callback.id,
+                                                      "Произошла ошибка. Пожалуйста, попробуйте выбрать напиток снова.")
+                            start_order(callback.message, bot)
+                    elif callback.data.startswith("sugar"):
+                        process_sugar_choice(callback, bot)
+                    elif callback.data == "repeat":
+                        process_more_choice(callback, bot)
+                    elif callback.data == "new_drink":
+                        process_more_choice(callback, bot)
+                    elif callback.data == "finish":
+                        process_more_choice(callback, bot)
+                    elif callback.data.startswith("location"):
+                        process_delivery_location(callback, bot)
+                    elif callback.data == "confirm_order":
+                        process_confirmation(callback, bot)
+                    elif callback.data == "cancel_order":
+                        process_confirmation(callback, bot)
+                    # end_region
+
                     #Прием всех вопросов из плитки вопросов и вызов соответствующих ответов
                     elif callback.data == 'qw_quit':
                         bot.edit_message_text(f'Вы можете выполнить такие функции:',
                                               reply_markup=make_main_markup(callback.message),
                                               chat_id=callback.message.chat.id,
                                               message_id=callback.message.message_id)
-                    #выход в главное мен
+                    #выход в главное меню
             except Exception:
                 admin(callback.message)
                 bot.send_message(callback.message.chat.id, 'Что-то пошло не так, попробуйте ещераз')
 
 
+        @bot.callback_query_handler(func=lambda callback: callback.data == 'orders')
+        def handle_orders(callback):
+            if check_admin_status(callback.message.chat.username):
+                all_orders = get_all_orders()
+                if not all_orders:
+                    bot.send_message(callback.message.chat.id, "Заказов нет.")
+                    return
+
+                orders_text = "\n\n".join(
+                    [f"Заказ #{i + 1}\n{format_order_text(order)}" for i, order in enumerate(all_orders)])
+                bot.send_message(callback.message.chat.id, f"Список заказов:\n{orders_text}")
+            else:
+                bot.send_message(callback.message.chat.id, "Эта функция доступна только админам.")
+
+
+        # Обработчик для изменения статуса заказа
+        @bot.message_handler(func=lambda message: message.text.startswith('/change_status'))
+        def handle_change_status(message):
+            if check_admin_status(message.chat.username):
+                try:
+                    parts = message.text.split()
+                    order_index = int(parts[1]) - 1
+                    new_status = parts[2]
+
+                    # Изменяем статус заказа
+                    change_order_status(order_index, new_status)
+
+                    # Уведомляем пользователя
+                    order = get_all_orders()[order_index]
+                    bot.send_message(message.chat.id, f"Статус вашего заказа изменен на: {new_status}")
+
+                    bot.send_message(message.chat.id, f"Статус заказа #{order_index + 1} изменен на: {new_status}")
+                except (IndexError, ValueError):
+                    bot.send_message(message.chat.id,
+                                     "Используйте формат: /change_status <номер заказа> <новый статус>")
+            else:
+                bot.send_message(message.chat.id, "Эта функция доступна только админам.")
         @bot.message_handler(content_types=['text'])
         # прием текстовых вводов пользователя и соответствующие функции
         def func(message):
@@ -467,7 +559,6 @@ while True:
                 bot.send_message(message.chat.id, 'Произошла ошибка', reply_markup=admin(message))
                 print('Неудачная попытка загрузки аудио')
 
-
         # Ввод фамилии и имени пользователя:
         def inp_folder(message):
             try:
@@ -501,7 +592,6 @@ while True:
             except Exception:
                 print('Ошибка в имени inp_name')
 
-
         # Клавиатура для подтверждения:
         def yes_or_no(message):
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, is_persistent=False)
@@ -509,7 +599,6 @@ while True:
             btn2 = types.KeyboardButton('❌ Нет')
             markup.add(btn1, btn2)
             bot.send_message(message.chat.id, 'Да/Нет', reply_markup=markup)
-
 
         #удаление админов:
         def del_admin(message):
@@ -522,6 +611,7 @@ while True:
             bot.send_message(message.chat.id, "Напишите 'Имя пользователя в телеграмме' админа",
                              reply_markup=btn_for_exit())
             bot.register_next_step_handler(message, inp_name)
+
         # Ввод вопросов:
         def inp_question(message):
             try:
@@ -533,11 +623,11 @@ while True:
                 now = datetime.now().strftime('%m-%d %H:%M')
                 send_questions(message.chat.id, str(now) + ': ' + question_from_user)
                 # Уведомление всех админов о вопросе
-                notify(admin_list, 'Новый вопрос от пользователя!!!')
+                for i in ladmins():
+                    bot.send_message(int(i), 'Новый вопрос от пользователя!!!')
             except Exception:
                 print('Ошибка в вопросе inp_question')
                 bot.send_message(message.chat.id, 'Ошибка в вопросе!!!')
-
 
         #Ответ от админа на вопросы пользователя:
         def answer(message):
@@ -546,7 +636,6 @@ while True:
             printed_work = get_data_from_column('Printed_work', message.chat.id)
             print(printed_work)
             send_answer_from_admin(message, get_id_from_question(printed_work), text)
-
 
         # Плитка с выбором из папок:
         def show_club():
@@ -559,7 +648,6 @@ while True:
             markup.add(exit_btn)
 
             return markup
-
 
         # Функция для вывода оценки:
         def ind_grade(message):
@@ -580,7 +668,6 @@ while True:
             text = message.text
             res = group_grading(text)
             bot.send_message(message.chat.id, res, reply_markup=btn_for_exit())
-
 
         # вопросы от пользоваетелей (плитка):
         def show_questions_from_users():
@@ -635,7 +722,7 @@ while True:
             # btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
             # markup.row(btn9, btn10)
             if judge_status or admin_status:
-                btn_drinks = types.InlineKeyboardButton('Заказать напитки', callback_data='order_drinks')
+                btn_drinks = types.InlineKeyboardButton('Заказать напитки', callback_data='drinks')
                 markup.row(btn_drinks)
             if admin_status:
                 btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')

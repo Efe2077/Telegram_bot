@@ -1,5 +1,7 @@
 from datetime import datetime
-from for_db_tasks import insert_into_db_data, get_data_from_column, get_all_users
+from for_db_tasks import insert_into_db_data, get_data_from_column
+from add_new import ladmins
+import sqlite3
 
 
 def create_order(user_id, drinks, location):
@@ -39,16 +41,30 @@ def save_order_to_db(user_id, order):
 
 def get_all_orders():
     """
-    Возвращает список всех заказов.
+    Возвращает список всех заказов из базы данных.
     :return: Список заказов
     """
     all_orders = []
-    users = get_all_users()
-    for user in users:
-        user_orders = get_data_from_column("Orders", user["id"])
-        if user_orders:
-            user_orders = eval(user_orders)
-            all_orders.extend(user_orders)
+
+    # Подключаемся к базе данных
+    conn = sqlite3.connect('your_database.db')
+    cursor = conn.cursor()
+
+    # Выполняем SQL-запрос
+    cursor.execute("SELECT id, Orders FROM users WHERE Orders IS NOT NULL")
+    rows = cursor.fetchall()
+
+    # Обрабатываем результаты
+    for row in rows:
+        user_id, orders_json = row
+        if orders_json:
+            orders = eval(orders_json)  # Преобразуем JSON/строку в список словарей
+            for order in orders:
+                order["user_id"] = user_id  # Добавляем ID пользователя в заказ
+                all_orders.append(order)
+
+    # Закрываем соединение
+    conn.close()
     return all_orders
 
 
@@ -104,7 +120,7 @@ def notify_admins(bot, order):
     admin_list = ladmins()
     order_text = format_order_text(order)
     for admin_id in admin_list:
-        bot.send_message(admin_id, f"Новый заказ:\n{order_text}")
+        bot.send_message(admin_id, f"Новый заказ!")
 
 
 def notify_user(bot, user_id, message):
