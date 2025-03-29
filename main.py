@@ -125,10 +125,9 @@ while True:
             bot.delete_message(message.chat.id, a.message_id)
 
             markup = make_main_markup(message)
-            bot.send_message(message.chat.id, 'Если у вас возникли вопросы по работе той или иной функции бота '
-                                              'или он перестал отвечать на сообщения, обратитесь в поддержку: @di_petrin\n'
-                                              'Если бот не отвечает на ввод фамилии или друго текста, '
-                                              'попробуйте просто вернуться в главное меню и попробовать снова')
+            bot.send_message(message.chat.id, '\n'
+                                              'Если бот не отвечает, '
+                                              'попробуйте начать заново: /start или обратиться в поддержку (@di_petrin)')
             bot.send_message(message.chat.id, 'Вы можете выполнить такие функции:', reply_markup=markup)
         # функция вызова главного меню - всему голова
 
@@ -616,20 +615,20 @@ while True:
             add_user(name, name2, id_of_user)  # Добавление нового пользователя
 
             markup = types.InlineKeyboardMarkup()
-            btn2 = types.InlineKeyboardButton('Групповая оценка', callback_data='group_grade')
-            btn3 = types.InlineKeyboardButton('Индивид. оценка', callback_data='ind_grade')
-            markup.row(btn2)
-            markup.row(btn3)
-            btn4 = types.InlineKeyboardButton('Музыка', callback_data='music')
+            # btn2 = types.InlineKeyboardButton('Групповая оценка', callback_data='group_grade')
+            # btn3 = types.InlineKeyboardButton('Индивид. оценка', callback_data='ind_grade')
+            # markup.row(btn2)
+            # markup.row(btn3)
+            btn4 = types.InlineKeyboardButton('Загрузить музыку', callback_data='music')
             markup.row(btn4)
             btn6 = types.InlineKeyboardButton('Обратиться к организаторам', callback_data='send_questions')
             markup.row(btn6)
-            btn7 = types.InlineKeyboardButton('ЧаВо⁉️', callback_data='F_A_Q')
+            # btn7 = types.InlineKeyboardButton('ЧаВо⁉️', callback_data='F_A_Q')
             btn8 = types.InlineKeyboardButton('О нас', callback_data='our_social_networks')
-            markup.row(btn7, btn8)
-            btn9 = types.InlineKeyboardButton('Видео-live', callback_data='video_live')
-            btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
-            markup.row(btn9, btn10)
+            markup.row(btn8)
+            # btn9 = types.InlineKeyboardButton('Видео-live', callback_data='video_live')
+            # btn10 = types.InlineKeyboardButton('Репортаж', callback_data='text_live')
+            # markup.row(btn9, btn10)
             if admin_status:
                 btn_for_admin1 = types.InlineKeyboardButton('Добавить админа', callback_data='add_new_admin')
                 markup.row(btn_for_admin1)
