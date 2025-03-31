@@ -12,42 +12,54 @@ WHOLE_CLUBS = []
 T = os.getenv('YD')
 Y = yadisk.YaDisk(token=T)
 
-# Заполняем список клубов при запуске
-try:
-    WHOLE_CLUBS = [el['name'] for el in Y.listdir('/Music')]
-    logger.info(f"Загружен список клубов: {len(WHOLE_CLUBS)}")
-except Exception as e:
-    logger.error(f"Ошибка загрузки клубов: {e}")
 
-
-def download_file_to_club(club, file_name, file_data, apparatus=None):
-    """Загружает файл на Яндекс.Диск с проверками"""
+def init_clubs_list():
+    """Инициализирует список клубов при запуске"""
+    global WHOLE_CLUBS
     try:
+        WHOLE_CLUBS = [el['name'] for el in Y.listdir('/Music')]
+        logger.info(f"Загружен список клубов: {len(WHOLE_CLUBS)}")
+        return True
+    except Exception as e:
+        logger.error(f"Ошибка загрузки клубов: {e}")
+        return False
+
+
+def upload_to_yadisk(club, file_name, file_data, progress_callback=None):
+    """Загружает файл на Яндекс.Диск"""
+    try:
+        # Проверка существования клуба
         if club not in WHOLE_CLUBS:
             logger.warning(f"Клуб не найден: {club}")
             return False, "Клуб не существует"
 
-        # Нормализация имени файла
-        base_name, ext = os.path.splitext(file_name)
-        if apparatus:
-            final_name = f"{base_name}_{apparatus}.mp3"
-        else:
-            final_name = f"{base_name}.mp3" if not ext else file_name
+        # Создаем путь для загрузки
+        remote_path = f'/Music/{club}/{file_name}'
 
-        # Проверка типа файла
-        if not final_name.lower().endswith(('.mp3', '.wav', '.ogg', '.flac')):
-            return False, "Неподдерживаемый формат аудио"
+        # Загрузка с обработкой прогресса
+        total_size = len(file_data)
+        uploaded = 0
+        chunk_size = 1024 * 1024  # 1MB chunks
 
-        # Загрузка с прогрессом
-        try:
-            Y.upload(BytesIO(file_data), f'/Music/{club}/{final_name}')
-            return True, "Файл успешно загружен"
-        except yadisk.exceptions.PathExistsError:
-            return False, "Файл уже существует"
-        except Exception as e:
-            logger.error(f"Ошибка загрузки: {e}")
-            return False, f"Ошибка: {str(e)}"
+        with BytesIO(file_data) as file_stream:
+            while uploaded < total_size:
+                chunk = file_stream.read(chunk_size)
+                Y.upload(chunk, remote_path, overwrite=True)
+                uploaded += len(chunk)
+                if progress_callback:
+                    progress_callback(uploaded, total_size)
 
+        return True, "Файл успешно загружен"
+
+    except yadisk.exceptions.PathExistsError:
+        return False, "Файл уже существует"
+    except yadisk.exceptions.YaDiskError as e:
+        logger.error(f"Ошибка Яндекс.Диска: {e}")
+        return False, f"Ошибка Яндекс.Диска: {str(e)}"
     except Exception as e:
         logger.error(f"Критическая ошибка: {e}")
         return False, "Критическая ошибка при загрузке"
+
+
+# Инициализируем список клубов при импорте
+init_clubs_list()

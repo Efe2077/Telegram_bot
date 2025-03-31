@@ -1,8 +1,6 @@
 import telebot
 import requests
-# для получения данных из API
 import xlsxwriter
-# для записи данных о пользователях в .xlsx - удобный для всех версий вариант представления инф-ции
 import os
 from dotenv import load_dotenv
 import shutil
@@ -12,11 +10,15 @@ from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
 from add_new import check_admin_status, add_admin, delete_your_admins, add_user, ladmins
-from for_yandex_disk import download_file_to_club
-from for_file_and_req import slim_shady, count_of_users, ind_grading, group_grading, make_new_folder_from_user, get_clubs
+from for_yandex_disk import upload_to_yadisk
+from for_file_and_req import slim_shady, count_of_users, ind_grading, group_grading, make_new_folder_from_user, \
+    get_clubs
 from for_db_tasks import insert_into_db_data, get_data_from_column
 import logging
 from logging.handlers import RotatingFileHandler
+import time
+import io
+import magic  # Для проверки MIME-типа файла
 
 
 def setup_logging():
@@ -46,12 +48,8 @@ def setup_logging():
 
 logger = setup_logging()
 
-
 while True:
     try:
-        # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
-        # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - Эфе
-        # 7072278948:AAHULSz4lWo-FADGtYPvT8zvug3RpySHIFA - Дениса
         logger.info("====== НОВЫЙ ЗАПУСК БОТА ======")
         logger.info(f"Инициализация бота. Время запуска: {datetime.now()}")
 
@@ -59,16 +57,12 @@ while True:
         BOT = os.getenv('B')
         bot = telebot.TeleBot(BOT)
 
-
         GREETINGS = ['Привет', 'Приветствую вас',
-                     'Здравствуйте', 'Добрый день'
-                     ]
-        # Мы сделали вариативные приветствия XD
+                     'Здравствуйте', 'Добрый день']
 
         GOODBYES = ['До свидания', 'Всего хорошего',
                     'Всего доброго', 'До встречи',
-                    'Прощайте', 'Бывай', 'Пока',
-                    ]
+                    'Прощайте', 'Бывай', 'Пока']
 
         consult = show_questions()
 
@@ -89,8 +83,16 @@ while True:
                 '15 - ГБОУДО Косарева Релеве',
                 '16 - СК Переворот',
                 '17 - Воробьевы горы']
-        TOUR = ['Спортивная весна 2024', 'Маленькая принцесса 2024', 'Весенние звездочки 2024', 'Московская зима 2024', 'Зимняя сказка 2023']
 
+        TOUR = ['Спортивная весна 2024', 'Маленькая принцесса 2024', 'Весенние звездочки 2024', 'Московская зима 2024',
+                'Зимняя сказка 2023']
+
+
+        def create_file_menu_keyboard():
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add(types.KeyboardButton('Изменить имя файла'))
+            markup.add(types.KeyboardButton('В главное меню'))
+            return markup
 
         def start_markup():
             markup = types.InlineKeyboardMarkup(row_width=True)
@@ -471,57 +473,103 @@ while True:
         @bot.message_handler(content_types=['document', 'audio'])
         def handle_media_upload(message):
             try:
+                logger.info(f"Начало обработки файла от {message.from_user.id}")
+
                 # Проверка состояния пользователя
                 if get_data_from_column('Command', message.chat.id) != 'sending_file':
+                    logger.warning("Попытка загрузки без команды sending_file")
                     return
 
-                # Получение информации о файле
+                # Получаем информацию о файле
                 if message.content_type == 'audio':
                     file_info = bot.get_file(message.audio.file_id)
-                    file_name = get_data_from_column('File_name', message.chat.id) or "music"
-                    file_size = message.audio.file_size
-                else:  # document
+                    original_name = message.audio.file_name or "audio_file"
+                    mime_type = message.audio.mime_type
+                else:
                     file_info = bot.get_file(message.document.file_id)
-                    file_name = message.document.file_name
-                    file_size = message.document.file_size
+                    original_name = message.document.file_name
+                    mime_type = message.document.mime_type
+
+                # Нормализация имени файла
+                clean_name = original_name.replace(' ', '_').lower()
+                base_name, ext = os.path.splitext(clean_name)
+
+                logger.info(f"Обработка файла: {original_name} -> {clean_name}")
 
                 # Проверка типа файла
-                if not any(file_name.lower().endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.flac']):
-                    bot.send_message(message.chat.id,
-                                     "❌ Файл не является аудио (поддерживаются MP3, WAV, OGG, FLAC)\n"
-                                     "Пожалуйста, пришлите аудиофайл",
+                ALLOWED_EXT = {'.mp3', '.wav', '.ogg', '.flac'}
+                ALLOWED_MIME = {'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/flac'}
+
+                if ext not in ALLOWED_EXT or (mime_type and mime_type not in ALLOWED_MIME):
+                    error_msg = [
+                        f"❌ Неподдерживаемый формат файла",
+                        f"Имя: {original_name}",
+                        f"Тип: {mime_type or 'не определен'}",
+                        "Поддерживаемые форматы: MP3, WAV, OGG, FLAC"
+                    ]
+                    bot.send_message(message.chat.id, "\n".join(error_msg),
                                      reply_markup=create_file_menu_keyboard())
                     return
 
-                # Загрузка файла
-                downloaded_file = bot.download_file(file_info.file_path)
+                # Загружаем файл
+                file_data = bot.download_file(file_info.file_path)
+                final_name = f"{base_name}.mp3"
                 your_club = get_data_from_column('Your_club', message.chat.id)
 
-                # Уведомление о начале загрузки
-                progress_msg = bot.send_message(message.chat.id,
-                                                f"📤 Начинаю загрузку {file_name}...\n"
-                                                f"Размер: {file_size // 1024} KB\n"
-                                                "Прогресс: ░░░░░░░░░░ 0%")
+                # Функция обновления прогресса
+                def update_progress(uploaded, total):
+                    progress = min(int((uploaded / total) * 10), 10)
+                    progress_bar = "█" * progress + "░" * (10 - progress)
+                    percent = min(int((uploaded / total) * 100), 100)
 
-                # Загрузка на Яндекс.Диск
-                success, msg = download_file_to_club(your_club, file_name, downloaded_file)
+                    try:
+                        bot.edit_message_text(
+                            f"📤 Загружаю {final_name}...\n"
+                            f"Размер: {total // 1024} KB\n"
+                            f"Прогресс: {progress_bar} {percent}%",
+                            chat_id=message.chat.id,
+                            message_id=progress_msg.message_id
+                        )
+                    except Exception as e:
+                        logger.warning(f"Ошибка обновления прогресса: {e}")
+
+                # Создаем сообщение о начале загрузки
+                progress_msg = bot.send_message(
+                    message.chat.id,
+                    f"📤 Загружаю {final_name}...\n"
+                    f"Размер: {len(file_data) // 1024} KB\n"
+                    "Прогресс: ░░░░░░░░░░ 0%"
+                )
+
+                # Загружаем на Яндекс.Диск
+                success, msg = upload_to_yadisk(
+                    your_club,
+                    final_name,
+                    file_data,
+                    progress_callback=update_progress
+                )
 
                 if success:
-                    bot.edit_message_text(f"✅ {msg}\n"
-                                          f"Файл: {file_name}\n"
-                                          f"Папка: {your_club}",
-                                          chat_id=message.chat.id,
-                                          message_id=progress_msg.message_id)
+                    bot.edit_message_text(
+                        f"✅ Успешно загружен!\n"
+                        f"Файл: {final_name}\n"
+                        f"Папка: {your_club}",
+                        chat_id=message.chat.id,
+                        message_id=progress_msg.message_id
+                    )
+                    # Кнопки после успешной загрузки
                     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                     markup.add(types.KeyboardButton('Загрузить ещё'))
                     markup.add(types.KeyboardButton('В главное меню'))
                     bot.send_message(message.chat.id, "Что дальше?", reply_markup=markup)
                 else:
-                    bot.edit_message_text(f"❌ {msg}",
-                                          chat_id=message.chat.id,
-                                          message_id=progress_msg.message_id)
+                    bot.edit_message_text(
+                        f"❌ Ошибка: {msg}",
+                        chat_id=message.chat.id,
+                        message_id=progress_msg.message_id
+                    )
                     bot.send_message(message.chat.id,
-                                     "Попробуйте снова или измените имя файла",
+                                     "Попробуйте снова",
                                      reply_markup=create_file_menu_keyboard())
 
                 # Очистка состояния
@@ -533,13 +581,6 @@ while True:
                 bot.send_message(message.chat.id,
                                  "⚠️ Произошла ошибка. Попробуйте снова",
                                  reply_markup=create_file_menu_keyboard())
-
-
-        def create_file_menu_keyboard():
-            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            markup.add(types.KeyboardButton('Изменить имя файла'))
-            markup.add(types.KeyboardButton('В главное меню'))
-            return markup
 
         # Ввод имени админа:
 
