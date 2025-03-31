@@ -1,51 +1,53 @@
 import os
 from dotenv import load_dotenv
 import yadisk
+import logging
+from io import BytesIO
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 WHOLE_CLUBS = []
 T = os.getenv('YD')
 Y = yadisk.YaDisk(token=T)
 
-# Заполняем список существующих клубов при запуске
-for el in Y.listdir('/Music'):
-    WHOLE_CLUBS.append(el['name'])
+# Заполняем список клубов при запуске
+try:
+    WHOLE_CLUBS = [el['name'] for el in Y.listdir('/Music')]
+    logger.info(f"Загружен список клубов: {len(WHOLE_CLUBS)}")
+except Exception as e:
+    logger.error(f"Ошибка загрузки клубов: {e}")
 
 
 def download_file_to_club(club, file_name, file_data, apparatus=None):
-    """
-    Загружает файл напрямую на Яндекс.Диск
-    :param club: Название клуба (папки)
-    :param file_name: Имя файла (без расширения)
-    :param file_data: Бинарные данные файла
-    :param apparatus: Вид снаряда (добавляется к имени файла)
-    :return: True если успешно, False если ошибка
-    """
+    """Загружает файл на Яндекс.Диск с проверками"""
     try:
         if club not in WHOLE_CLUBS:
-            return False  # Клуба не существует
+            logger.warning(f"Клуб не найден: {club}")
+            return False, "Клуб не существует"
 
-        # Формируем окончательное имя файла
+        # Нормализация имени файла
+        base_name, ext = os.path.splitext(file_name)
         if apparatus:
-            base_name, ext = os.path.splitext(file_name)
-            final_name = f"{base_name}_{apparatus}{ext}"
+            final_name = f"{base_name}_{apparatus}.mp3"
         else:
-            final_name = file_name
+            final_name = f"{base_name}.mp3" if not ext else file_name
 
-        # Загружаем файл
-        from io import BytesIO
-        file_stream = BytesIO(file_data)
-        file_stream.name = final_name
+        # Проверка типа файла
+        if not final_name.lower().endswith(('.mp3', '.wav', '.ogg', '.flac')):
+            return False, "Неподдерживаемый формат аудио"
 
+        # Загрузка с прогрессом
         try:
-            Y.upload(file_stream, f'/Music/{club}/{final_name}')
-            return True
+            Y.upload(BytesIO(file_data), f'/Music/{club}/{final_name}')
+            return True, "Файл успешно загружен"
         except yadisk.exceptions.PathExistsError:
-            return False  # Файл уже существует
+            return False, "Файл уже существует"
         except Exception as e:
-            print(f'Ошибка загрузки на Яндекс.Диск: {e}')
-            return False
+            logger.error(f"Ошибка загрузки: {e}")
+            return False, f"Ошибка: {str(e)}"
 
     except Exception as e:
-        print(f'Ошибка в download_file_to_club: {e}')
-        return False
+        logger.error(f"Критическая ошибка: {e}")
+        return False, "Критическая ошибка при загрузке"

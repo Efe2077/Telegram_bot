@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 import shutil
 from telebot import types
-from datetime import datetime
+from datetime import datetime, time
 from random import choice
 from telebot.types import ReplyKeyboardRemove
 from for_questions import send_questions, show_questions, get_id_from_question, delete_questions
@@ -15,11 +15,46 @@ from add_new import check_admin_status, add_admin, delete_your_admins, add_user,
 from for_yandex_disk import download_file_to_club
 from for_file_and_req import slim_shady, count_of_users, ind_grading, group_grading, make_new_folder_from_user, get_clubs
 from for_db_tasks import insert_into_db_data, get_data_from_column
+import logging
+from logging.handlers import RotatingFileHandler
+
+
+def setup_logging():
+    log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Ротация логов (5 файлов по 5 МБ каждый)
+    file_handler = RotatingFileHandler(
+        'bot.log',
+        maxBytes=5 * 1024 * 1024,
+        backupCount=5,
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(log_formatter)
+
+    # Консольный вывод
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(log_formatter)
+
+    # Основной логгер
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return logger
+
+
+logger = setup_logging()
+
+
 while True:
     try:
         # 7050246509:AAHKETNv4k6_Z6FQ37bkCh1QJlqFABpJ2Mo - основной
         # 6996070096:AAHKAAZEvorjnwrd7Fec9kbYzRSt7qTXV7k - Эфе
         # 7072278948:AAHULSz4lWo-FADGtYPvT8zvug3RpySHIFA - Дениса
+        logger.info("====== НОВЫЙ ЗАПУСК БОТА ======")
+        logger.info(f"Инициализация бота. Время запуска: {datetime.now()}")
+
         load_dotenv()
         BOT = os.getenv('B')
         bot = telebot.TeleBot(BOT)
@@ -67,7 +102,6 @@ while True:
 
             return markup
         # Проверка на подписку на тг-каналы проекта - маркап из самих каналов и кнопки "проверить"
-
 
         def rename_file(message):
             try:
@@ -434,52 +468,79 @@ while True:
             bot.reply_to(message, 'Здорово! Не хотите ли Вы предложить это фото для поста в канале?', reply_markup=markup)
 
 
-        @bot.message_handler(content_types=['audio'])
-        def send_audio_into_folder(message):
+        @bot.message_handler(content_types=['document', 'audio'])
+        def handle_media_upload(message):
             try:
-                if get_data_from_column('Command', message.chat.id) == 'sending_file':
-                    # Получаем информацию о файле
+                # Проверка состояния пользователя
+                if get_data_from_column('Command', message.chat.id) != 'sending_file':
+                    return
+
+                # Получение информации о файле
+                if message.content_type == 'audio':
                     file_info = bot.get_file(message.audio.file_id)
-                    downloaded_file = bot.download_file(file_info.file_path)  # Получаем бинарные данные файла
+                    file_name = get_data_from_column('File_name', message.chat.id) or "music"
+                    file_size = message.audio.file_size
+                else:  # document
+                    file_info = bot.get_file(message.document.file_id)
+                    file_name = message.document.file_name
+                    file_size = message.document.file_size
 
-                    file_name = get_data_from_column('File_name', message.chat.id)
-                    your_club = get_data_from_column('Your_club', message.chat.id)
+                # Проверка типа файла
+                if not any(file_name.lower().endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.flac']):
+                    bot.send_message(message.chat.id,
+                                     "❌ Файл не является аудио (поддерживаются MP3, WAV, OGG, FLAC)\n"
+                                     "Пожалуйста, пришлите аудиофайл",
+                                     reply_markup=create_file_menu_keyboard())
+                    return
 
-                    # Загружаем напрямую на Яндекс.Диск
-                    success = download_file_to_club(your_club, file_name, downloaded_file)
+                # Загрузка файла
+                downloaded_file = bot.download_file(file_info.file_path)
+                your_club = get_data_from_column('Your_club', message.chat.id)
 
-                    if not success:
-                        bot.send_message(message.chat.id, 'Файл с таким названием уже существует или произошла ошибка\n'
-                                                          'Поменяйте название файла и прикрепите его повторно')
-                    else:
-                        bot.send_message(message.chat.id, 'Файл успешно прикреплен', reply_markup=btn_for_exit())
+                # Уведомление о начале загрузки
+                progress_msg = bot.send_message(message.chat.id,
+                                                f"📤 Начинаю загрузку {file_name}...\n"
+                                                f"Размер: {file_size // 1024} KB\n"
+                                                "Прогресс: ░░░░░░░░░░ 0%")
 
-                    # Очистка значений
-                    insert_into_db_data('', 'File_name', message.chat.id)
-                    insert_into_db_data('send_file_to_folder', 'Command', message.chat.id)
+                # Загрузка на Яндекс.Диск
+                success, msg = download_file_to_club(your_club, file_name, downloaded_file)
+
+                if success:
+                    bot.edit_message_text(f"✅ {msg}\n"
+                                          f"Файл: {file_name}\n"
+                                          f"Папка: {your_club}",
+                                          chat_id=message.chat.id,
+                                          message_id=progress_msg.message_id)
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                    markup.add(types.KeyboardButton('Загрузить ещё'))
+                    markup.add(types.KeyboardButton('В главное меню'))
+                    bot.send_message(message.chat.id, "Что дальше?", reply_markup=markup)
+                else:
+                    bot.edit_message_text(f"❌ {msg}",
+                                          chat_id=message.chat.id,
+                                          message_id=progress_msg.message_id)
+                    bot.send_message(message.chat.id,
+                                     "Попробуйте снова или измените имя файла",
+                                     reply_markup=create_file_menu_keyboard())
+
+                # Очистка состояния
+                insert_into_db_data('', 'File_name', message.chat.id)
+                insert_into_db_data('', 'Command', message.chat.id)
 
             except Exception as e:
-                print(f'Ошибка при обработке аудио: {e}')
-                bot.send_message(message.chat.id, 'Произошла ошибка при обработке файла', reply_markup=admin(message))
+                logger.error(f"Ошибка обработки файла: {e}")
+                bot.send_message(message.chat.id,
+                                 "⚠️ Произошла ошибка. Попробуйте снова",
+                                 reply_markup=create_file_menu_keyboard())
 
 
-        # Ввод фамилии и имени пользователя:
-        def inp_folder(message):
-            try:
-                if message.text == 'В главное меню':
-                    bot.delete_message(message.chat.id, message.message_id - 1)
-                    admin(message)
-                    return 0
-                text = message.text
-                text = text.capitalize()
-                insert_into_db_data(text, 'Fio', message.chat.id)
-                bot.send_message(message.chat.id, f'Ваша папка: \n{text}')
-                insert_into_db_data('sending_file', 'Command', message.chat.id)
-                bot.send_message(message.chat.id, f'Прикрепите файл с музыкой (.mp3)')
-            except Exception:
-                print('Ошибка в inp_folder')
-                bot.send_message(message.chat.id,'Ошибка при вводе имени папки')
-                admin(message)
+        def create_file_menu_keyboard():
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add(types.KeyboardButton('Изменить имя файла'))
+            markup.add(types.KeyboardButton('В главное меню'))
+            return markup
+
         # Ввод имени админа:
 
         def inp_name(message):
@@ -687,5 +748,6 @@ while True:
 
         if __name__ == '__main__':
             bot.polling(none_stop=True)
-    except Exception:
-        print('Ну заново, че)')
+    except Exception as e:
+        logger.critical(f"Критическая ошибка: {str(e)}", exc_info=True)
+        time.sleep(1)
